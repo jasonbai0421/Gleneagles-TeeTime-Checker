@@ -1,79 +1,97 @@
-import os, time
+import time
 from datetime import datetime, timedelta
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 import smtplib
 from email.mime.text import MIMEText
+import os
 
+# 获取环境变量
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 
-URL_TEMPLATE = "https://w.cps.golf/WestVancouverV3/Home/nIndex?CourseId=1&Date={date}&Time=AnyTime&Player=99&Hole=9"
-START_HOUR = 9
-END_HOUR = 20
-MIN_SPOTS = 4
-
-def send_email(subject, body):
-    msg = MIMEText(body)
-    msg["Subject"] = subject
+def send_email(slots):
+    if not slots:
+        print("没有匹配的时间，不发送邮件。")
+        return
+    content = "\n".join([f"{s['date']} {s['time']} - {s['players']} players" for s in slots])
+    msg = MIMEText(content)
+    msg["Subject"] = "Gleneagles 可预订 Tee Time"
     msg["From"] = EMAIL_SENDER
     msg["To"] = EMAIL_RECEIVER
-    with smtplib.SMTP("smtp.126.com", 25) as server:
-        server.starttls()
-        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.send_message(msg)
 
-def check_tee_times_for_date(driver, date_obj):
-    date_str = date_obj.strftime("%Y-%-m-%-d")
-    url = URL_TEMPLATE.format(date=date_str)
-    driver.get(url)
-    time.sleep(4)
-    matches = []
-    rows = driver.find_elements(By.CLASS_NAME, "teeTimeRow")
-    for row in rows:
-        try:
-            t_str = row.find_element(By.CLASS_NAME, "timeCell").text
-            p_str = row.find_element(By.CLASS_NAME, "playersCell").text
-            hour = int(t_str.split(":")[0])
-            if "PM" in t_str.upper() and hour < 12:
-                hour += 12
-            if "to" in p_str:
-                high = int(p_str.split("to")[1].split()[0])
-            else:
-                high = int(p_str.split()[0])
-            if START_HOUR <= hour < END_HOUR and high >= MIN_SPOTS:
-                matches.append(f"{t_str} - {p_str}")
-        except:
-            continue
-    return date_str, matches
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
+        print("✅ 邮件已发送。")
+    except Exception as e:
+        print(f"❌ 邮件发送失败: {e}")
 
-def main():
-    options = webdriver.ChromeOptions()
+def check_tee_times():
+    options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.binary_location = "/usr/bin/chromium-browser"
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-    today = datetime.today()
-    all_results = {}
+    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
 
-    for i in range(1, 9):
-        date_obj = today + timedelta(days=i)
-        date_str, matches = check_tee_times_for_date(driver, date_obj)
-        if matches:
-            all_results[date_str] = matches
+    base_url = "https://w.cps.golf/WestVancouverV3/(S(55dss44jkrdzyv2ptxgv5yfh))/Home/nIndex?CourseId=1&Date={}&Time=AnyTime&Player=99&Hole=9"
+
+    today = datetime.now()
+    start_date = today + timedelta(days=1)
+    end_date = today + timedelta(days=8)
+
+    matching_slots = []
+
+    for i in range((end_date - start_date).days + 1):
+        check_date = start_date + timedelta(days=i)
+        date_str = check_date.strftime("%Y-%-m-%-d")
+        url = base_url.format(date_str)
+
+        print(f"\n🔍 检查日期：{date_str}")
+        driver.get(url)
+        time.sleep(2)
+
+        try:
+            rows = driver.find_elements(By.CSS_SELECTOR, "tr.dataRow")
+            print(f"🔍 找到 {len(rows)} 个 Tee Time 行")
+
+            for row in rows:
+                t_str = row.find_element(By.CSS_SELECTOR, "td:nth-child(1)").text.strip()
+                players_text = row.find_element(By.CSS_SELECTOR, "td:nth-child(3)").text.strip()
+
+                print(f"  ⏱️ 原始时间：{t_str}，空位情况：{players_text}")
+
+                hour = int(t_str.split(":")[0])
+                if "PM" in t_str.upper() and hour < 12:
+                    hour += 12
+
+                if 9 <= hour < 12 and "4" in players_text:
+                    print("    ✅ 匹配条件：加入到匹配列表中")
+                    matching_slots.append({
+                        "date": date_str,
+                        "time": t_str,
+                        "players": players_text
+                    })
+                else:
+                    print("    ❌ 不符合条件")
+        except Exception as e:
+            print(f"⚠️ 抓取失败: {e}")
 
     driver.quit()
+    
+    if matching_slots:
+        print("\n✅ 匹配到的 Tee Time：")
+        for slot in matching_slots:
+            print(f"  - {slot['date']} {slot['time']} with {slot['players']} players")
+    else:
+        print("\n❌ 没有符合条件的 Tee Time")
 
-    if all_results:
-        subject = f"⛳ Tee Time 通知：共 {sum(len(v) for v in all_results.values())} 个空位"
-        body_lines = []
-        for date, times in sorted(all_results.items()):
-            body_lines.append(f"\n📅 {date}:")
-            for item in times:
-                body_lines.append(f"  - {item}")
-        send_email(subject, "\n".join(body_lines))
+    send_email(matching_slots)
+
+if __name__ == "__main__":
+    check_tee_times()
