@@ -1,0 +1,36 @@
+name: Tee Time Checker
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # 每 15 分钟执行一次
+  workflow_dispatch:         # 允许手动运行一次（方便调试）
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y wget unzip gnupg curl fonts-liberation libnss3 \
+            libatk1.0-0 libxss1 libappindicator1 libasound2 libgbm1 libgtk-3-0 \
+            chromium-browser
+
+      - name: Set environment variables
+        run: |
+          echo "EMAIL_SENDER=${{ secrets.EMAIL_SENDER }}" >> $GITHUB_ENV
+          echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> $GITHUB_ENV
+          echo "EMAIL_RECEIVER=${{ secrets.EMAIL_RECEIVER }}" >> $GITHUB_ENV
+
+      - name: Run script
+        run: python main.py
