@@ -24,7 +24,7 @@ def send_email(slots):
     msg["To"] = EMAIL_RECEIVER
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        with smtplib.SMTP_SSL("smtp.126.com", 25) as server:
             server.login(EMAIL_SENDER, EMAIL_PASSWORD)
             server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
         print("✅ 邮件已发送。")
