@@ -1,5 +1,4 @@
-import os
-import time
+import os, time
 from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -31,7 +30,7 @@ def check_tee_times_for_date(driver, date_obj):
     date_str = date_obj.strftime("%Y-%-m-%-d")
     url = URL_TEMPLATE.format(date=date_str)
     driver.get(url)
-    time.sleep(5)
+    time.sleep(4)
     matches = []
     rows = driver.find_elements(By.CLASS_NAME, "teeTimeRow")
     for row in rows:
@@ -46,27 +45,35 @@ def check_tee_times_for_date(driver, date_obj):
             else:
                 high = int(p_str.split()[0])
             if START_HOUR <= hour < END_HOUR and high >= MIN_SPOTS:
-                matches.append(f"{date_str} - {t_str} - {p_str}")
+                matches.append(f"{t_str} - {p_str}")
         except:
             continue
-    return matches
+    return date_str, matches
 
 def main():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.binary_location = "/usr/bin/chromium-browser"
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
     today = datetime.today()
-    all_matches = []
+    all_results = {}
+
     for i in range(1, 9):
         date_obj = today + timedelta(days=i)
-        all_matches += check_tee_times_for_date(driver, date_obj)
-    driver.quit()
-    if all_matches:
-        subject = f"⛳ Tee Time 提醒：{len(all_matches)} 个空位"
-        body = "\n".join(all_matches)
-        send_email(subject, body)
+        date_str, matches = check_tee_times_for_date(driver, date_obj)
+        if matches:
+            all_results[date_str] = matches
 
-if __name__ == "__main__":
-    main()
+    driver.quit()
+
+    if all_results:
+        subject = f"⛳ Tee Time 通知：共 {sum(len(v) for v in all_results.values())} 个空位"
+        body_lines = []
+        for date, times in sorted(all_results.items()):
+            body_lines.append(f"\n📅 {date}:")
+            for item in times:
+                body_lines.append(f"  - {item}")
+        send_email(subject, "\n".join(body_lines))
