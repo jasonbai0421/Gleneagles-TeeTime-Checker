@@ -22,9 +22,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           sudo apt-get update
-          sudo apt-get install -y wget unzip gnupg curl fonts-liberation libnss3 \
-            libatk1.0-0 libxss1 libappindicator1 libasound2 libgbm1 libgtk-3-0 \
-            chromium-browser
+          sudo apt-get install -y wget unzip gnupg curl fonts-liberation libnss3 \libatk1.0-0 libxss1 libappindicator3-1 libasound2t64 libgbm1 libgtk-3-0 \chromium-browser
 
       - name: Set environment variables
         run: |
