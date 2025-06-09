@@ -13,7 +13,7 @@ EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 
 URL_TEMPLATE = "https://w.cps.golf/WestVancouverV3/Home/nIndex?CourseId=1&Date={date}&Time=AnyTime&Player=99&Hole=9"
 START_HOUR = 9
-END_HOUR = 12
+END_HOUR = 20
 MIN_SPOTS = 4
 
 def send_email(subject, body):
