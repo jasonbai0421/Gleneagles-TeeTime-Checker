@@ -9,74 +9,88 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 
-# 邮件配置
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 
-def send_email(subject, body):
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = EMAIL_RECEIVER
+BASE_URL = "https://w.cps.golf/WestVancouverV3/Home/nIndex?CourseId=1&Date={date}&Time=AnyTime&Player=99&Hole=9"
 
+# 设置调试输出
+def debug_log(message):
+    print(f"[DEBUG] {message}")
+
+# 判断是否在上午9点到12点之间
+def is_target_time(t_str):
     try:
-        with smtplib.SMTP_SSL("smtp.126.com", 25) as server:
-            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
-        print("✅ 邮件发送成功")
-    except Exception as e:
-        print("❌ 邮件发送失败:", e)
+        if "AM" in t_str.upper() or "PM" in t_str.upper():
+            hour = int(t_str.split(":")[0])
+            if "PM" in t_str.upper() and hour < 12:
+                hour += 12
+            return 9 <= hour < 12
+    except:
+        pass
+    return False
 
+# 抓取一个日期的数据
 def check_tee_times():
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+
+    found_slots = []
 
     today = datetime.today()
-    all_results = []
-
-    for i in range(1, 9):  # 次日到第 8 天
-        check_date = today + timedelta(days=i)
-        date_str = check_date.strftime("%Y-%-m-%-d")
-        url = f"https://w.cps.golf/WestVancouverV3/Home/nIndex?CourseId=1&Date={date_str}&Time=AnyTime&Player=99&Hole=9"
-
-        print(f"\n🔍 正在检查日期：{check_date.strftime('%Y-%m-%d')}")
+    for offset in range(1, 9):  # 次日到+8天
+        target_date = today + timedelta(days=offset)
+        date_str = target_date.strftime("%Y-%-m-%-d")
+        url = BASE_URL.format(date=date_str)
+        debug_log(f"Checking {date_str} ... URL: {url}")
 
         driver.get(url)
-        time.sleep(2)
+        time.sleep(5)  # 确保加载完页面
 
-        slots = driver.find_elements(By.CSS_SELECTOR, ".teeTime")
-        for slot in slots:
-            try:
-                t_str = slot.find_element(By.CSS_SELECTOR, ".startTime").text.strip()
-                p_str = slot.find_element(By.CSS_SELECTOR, ".playerCount").text.strip()
+        try:
+            rows = driver.find_elements(By.CSS_SELECTOR, ".available-times .row")
+            debug_log(f"Found {len(rows)} rows on {date_str}")
+            for row in rows:
+                try:
+                    time_el = row.find_element(By.CSS_SELECTOR, ".tee-time")
+                    spots_el = row.find_element(By.CSS_SELECTOR, ".tee-time-spots")
+                    t_str = time_el.text.strip()
+                    spots = spots_el.text.strip()
 
-                print(f"发现时间段: {t_str}, 玩家数: {p_str}")
+                    debug_log(f"Raw time: {t_str}, Spots: {spots}")
 
-                if "AM" in t_str.upper() or "PM" in t_str.upper():
-                    hour = int(t_str.split(":")[0])
-                    if "PM" in t_str.upper() and hour < 12:
-                        hour += 12
-                    if 9 <= hour < 12:
-                        players = int(p_str.split("/")[0])
-                        if players == 0:
-                            result = f"{check_date.strftime('%Y-%m-%d')} {t_str} 有 4 个空位"
-                            all_results.append(result)
-                            print("✅ 匹配空位:", result)
-            except Exception as e:
-                print("❌ 解析某个 slot 出错:", e)
+                    if "4" in spots and is_target_time(t_str):
+                        found_slots.append(f"{date_str} {t_str} - {spots}")
+                except Exception as e:
+                    debug_log(f"Failed to parse a row: {e}")
+        except Exception as e:
+            debug_log(f"Error fetching tee times for {date_str}: {e}")
 
     driver.quit()
 
-    if all_results:
-        content = "\n".join(all_results)
-        send_email("🎯 Gleneagles 可用 Tee Time", content)
+    if found_slots:
+        message = "\n".join(found_slots)
+        debug_log("Matched Tee Times:\n" + message)
+        send_email(message)
     else:
-        print("😔 当前无符合条件的 tee time。")
+        debug_log("No matching tee times found.")
+
+# 发邮件
+def send_email(content):
+    msg = MIMEText(content)
+    msg["Subject"] = "Gleneagles Tee Time Reminder"
+    msg["From"] = EMAIL_SENDER
+    msg["To"] = EMAIL_RECEIVER
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.send_message(msg)
 
 if __name__ == "__main__":
     check_tee_times()
