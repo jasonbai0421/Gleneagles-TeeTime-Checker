@@ -32,6 +32,7 @@ def is_target_time(t_str):
     return False
 
 # 抓取一个日期的数据
+# 抓取一个日期的数据
 def check_tee_times():
     options = Options()
     options.add_argument("--headless")
@@ -54,19 +55,24 @@ def check_tee_times():
         time.sleep(5)  # 确保加载完页面
 
         try:
-            rows = driver.find_elements(By.CSS_SELECTOR, ".available-times .row")
+            # 每一个 tee time 都是一个 div.teetime
+            rows = driver.find_elements(By.CSS_SELECTOR, "div.teetime")
             debug_log(f"Found {len(rows)} rows on {date_str}")
             for row in rows:
                 try:
-                    time_el = row.find_element(By.CSS_SELECTOR, ".tee-time")
-                    spots_el = row.find_element(By.CSS_SELECTOR, ".tee-time-spots")
+                    # 读取时间
+                    time_el = row.find_element(By.CSS_SELECTOR, "h3.timeDiv span")
                     t_str = time_el.text.strip()
-                    spots = spots_el.text.strip()
 
-                    debug_log(f"Raw time: {t_str}, Spots: {spots}")
+                    # 读取人数（如 Single Only 或 2 - 4 players）
+                    player_info_el = row.find_element(By.CSS_SELECTOR, "div.player p")
+                    player_info = player_info_el.text.strip()
 
-                    if "4" in spots and is_target_time(t_str):
-                        found_slots.append(f"{date_str} {t_str} - {spots}")
+                    debug_log(f"Raw time: {t_str}, Players: {player_info}")
+
+                    # 判断是否符合时间要求，且至少有“4”这个关键词（可以调整逻辑）
+                    if ("4" in player_info or "2 - 4" in player_info) and is_target_time(t_str):
+                        found_slots.append(f"{date_str} {t_str} - {player_info}")
                 except Exception as e:
                     debug_log(f"Failed to parse a row: {e}")
         except Exception as e:
@@ -80,7 +86,7 @@ def check_tee_times():
         send_email(message)
     else:
         debug_log("No matching tee times found.")
-
+        
 # 发邮件
 def send_email(content):
     msg = MIMEText(content)
@@ -88,7 +94,7 @@ def send_email(content):
     msg["From"] = EMAIL_SENDER
     msg["To"] = EMAIL_RECEIVER
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    with smtplib.SMTP_SSL("smtp.126.com", 25) as server:
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
         server.send_message(msg)
 
