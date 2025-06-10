@@ -47,6 +47,11 @@ def check_tee_times():
     today = datetime.today()
     for offset in range(1, 8):  # 次日到+8天
         target_date = today + timedelta(days=offset)
+        # ➤ 只处理周一到周五
+        if target_date.weekday() > 4:
+            debug_log(f"Skipping {target_date.strftime('%Y-%-m-%-d')} (Weekend)")
+            continue
+
         date_str = target_date.strftime("%Y-%-m-%-d")
         url = BASE_URL.format(date=date_str)
         debug_log(f"Checking {date_str} ... URL: {url}")
