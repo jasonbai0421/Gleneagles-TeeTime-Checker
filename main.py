@@ -109,14 +109,15 @@ def check_tee_times():
 
 # 发邮件
 def send_email(content):
+    receivers = [email.strip() for email in EMAIL_RECEIVER.split(",")]  # 支持多个收件人
     msg = MIMEText(content)
     msg["Subject"] = "Gleneagles Tee Time Reminder"
     msg["From"] = EMAIL_SENDER
-    msg["To"] = EMAIL_RECEIVER
+    msg["To"] = ", ".join(receivers)
 
     with smtplib.SMTP_SSL("smtp.126.com", 465) as server:
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.send_message(msg)
+        server.sendmail(EMAIL_SENDER, receivers, msg.as_string())
 
 if __name__ == "__main__":
     check_tee_times()
