@@ -84,28 +84,28 @@ def check_tee_times():
             debug_log(f"Error fetching tee times for {date_str}: {e}")
 
     driver.quit()
+    if found_slots:
+        message = "\n".join(found_slots)
+        debug_log("Matched Tee Times:\n" + message)
 
-if found_slots:
-    message = "\n".join(found_slots)
-    debug_log("Matched Tee Times:\n" + message)
+        # 读取上次的结果
+        last_result_path = "last_result.txt"
+        last_message = ""
+        if os.path.exists(last_result_path):
+            with open(last_result_path, "r") as f:
+                last_message = f.read().strip()
 
-    # 读取上次的结果
-    last_result_path = "last_result.txt"
-    last_message = ""
-    if os.path.exists(last_result_path):
-        with open(last_result_path, "r") as f:
-            last_message = f.read().strip()
-
-    # 如果有变化才发邮件
-    if message != last_message:
-        send_email(message)
-        with open(last_result_path, "w") as f:
-            f.write(message)
-        debug_log("Email sent and result updated.")
+        # 如果有变化才发邮件
+        if message != last_message:
+            send_email(message)
+            with open(last_result_path, "w") as f:
+                f.write(message)
+            debug_log("Email sent and result updated.")
+        else:
+            debug_log("Tee times unchanged — no email sent.")
     else:
-        debug_log("Tee times unchanged — no email sent.")
-else:
-    debug_log("No matching tee times found.")
+        debug_log("No matching tee times found.")
+
 
 # 发邮件
 def send_email(content):
