@@ -45,7 +45,7 @@ def check_tee_times():
     found_slots = []
 
     today = datetime.today()
-    for offset in range(1, 9):  # 次日到+8天
+    for offset in range(1, 8):  # 次日到+8天
         target_date = today + timedelta(days=offset)
         date_str = target_date.strftime("%Y-%-m-%-d")
         url = BASE_URL.format(date=date_str)
