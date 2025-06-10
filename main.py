@@ -94,7 +94,7 @@ def send_email(content):
     msg["From"] = EMAIL_SENDER
     msg["To"] = EMAIL_RECEIVER
 
-    with smtplib.SMTP_SSL("smtp.126.com", 25) as server:
+    with smtplib.SMTP_SSL("smtp.126.com", 465) as server:
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
         server.send_message(msg)
 
