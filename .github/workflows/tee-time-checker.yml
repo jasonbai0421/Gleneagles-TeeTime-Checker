@@ -1,7 +1,7 @@
 name: Tee Time Checker
 
 on:
-  schedule:
+  #schedule:
     #- cron: "*/10 * * * *"   # 每 10 分钟执行一次
     #- cron: "7,17,27,37,47,57 * * * *"
   workflow_dispatch:         # 允许手动运行一次（方便调试）
