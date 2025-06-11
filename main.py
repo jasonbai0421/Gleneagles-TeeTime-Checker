@@ -31,6 +31,46 @@ def is_target_time(t_str):
         pass
     return False
 
+import requests
+
+GIST_ID = os.getenv("GIST_ID")
+GIST_TOKEN = os.getenv("GIST_TOKEN")
+
+def load_last_result_from_gist():
+    try:
+        headers = {"Authorization": f"Bearer {GIST_TOKEN}"}
+        response = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers)
+        if response.status_code == 200:
+            files = response.json().get("files", {})
+            content = files.get("last_result.txt", {}).get("content", "")
+            return content.strip()
+        else:
+            debug_log(f"Failed to load Gist: {response.status_code}")
+    except Exception as e:
+        debug_log(f"Error loading Gist: {e}")
+    return ""
+
+def save_result_to_gist(content):
+    try:
+        headers = {
+            "Authorization": f"Bearer {GIST_TOKEN}",
+            "Accept": "application/vnd.github+json"
+        }
+        data = {
+            "files": {
+                "last_result.txt": {
+                    "content": content
+                }
+            }
+        }
+        response = requests.patch(f"https://api.github.com/gists/{GIST_ID}", headers=headers, json=data)
+        if response.status_code == 200:
+            debug_log("Gist updated successfully.")
+        else:
+            debug_log(f"Failed to update Gist: {response.status_code}")
+    except Exception as e:
+        debug_log(f"Error saving Gist: {e}")
+
 # 抓取一个日期的数据
 # 抓取一个日期的数据
 def check_tee_times():
@@ -89,17 +129,12 @@ def check_tee_times():
         debug_log("Matched Tee Times:\n" + message)
 
         # 读取上次的结果
-        last_result_path = "last_result.txt"
-        last_message = ""
-        if os.path.exists(last_result_path):
-            with open(last_result_path, "r") as f:
-                last_message = f.read().strip()
-
+        last_message = load_last_result_from_gist()
+        
         # 如果有变化才发邮件
         if message != last_message:
             send_email(message)
-            with open(last_result_path, "w") as f:
-                f.write(message)
+            save_result_to_gist(message)
             debug_log("Email sent and result updated.")
         else:
             debug_log("Tee times unchanged — no email sent.")
