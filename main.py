@@ -38,16 +38,31 @@ GIST_TOKEN = os.getenv("GIST_TOKEN")
 
 def load_last_result_from_gist():
     try:
-        headers = {"Authorization": f"Bearer {GIST_TOKEN}"}
-        response = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers)
+        headers = {
+            "Authorization": f"Bearer {GIST_TOKEN}",
+            "Accept": "application/vnd.github+json"
+        }
+        url = f"https://api.github.com/gists/{GIST_ID}"
+        debug_log(f"[Gist] Fetching Gist from: {url}")
+        debug_log(f"[Gist] Using Token (first 6 chars): {GIST_TOKEN[:6]}...")
+
+        response = requests.get(url, headers=headers)
+
+        debug_log(f"[Gist] Status Code: {response.status_code}")
+        debug_log(f"[Gist] Response Text: {response.text[:200]}...")  # 只显示前200字避免太长
+
         if response.status_code == 200:
             files = response.json().get("files", {})
             content = files.get("last_result.txt", {}).get("content", "")
             return content.strip()
+        elif response.status_code == 401:
+            debug_log("[Gist] ❌ Unauthorized (401): Token 无效或权限不足")
+        elif response.status_code == 404:
+            debug_log("[Gist] ❌ Not Found (404): Gist ID 不存在或你无权访问")
         else:
-            debug_log(f"Failed to load Gist: {response.status_code}")
+            debug_log(f"[Gist] ⚠️ 未知错误: {response.status_code}")
     except Exception as e:
-        debug_log(f"Error loading Gist: {e}")
+        debug_log(f"[Gist] ⚠️ 异常: {e}")
     return ""
 
 def save_result_to_gist(content):
