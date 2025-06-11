@@ -33,6 +33,8 @@ jobs:
           echo "EMAIL_SENDER=${{ secrets.EMAIL_SENDER }}" >> $GITHUB_ENV
           echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> $GITHUB_ENV
           echo "EMAIL_RECEIVER=${{ secrets.EMAIL_RECEIVER }}" >> $GITHUB_ENV
-
+          echo "GIST_ID=${{ secrets.GIST_ID }}" >> $GITHUB_ENV
+          echo "GIST_TOKEN=${{ secrets.GIST_TOKEN }}" >> $GITHUB_ENV
+          
       - name: Run script
         run: python main.py
