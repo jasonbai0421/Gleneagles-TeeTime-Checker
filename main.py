@@ -130,6 +130,8 @@ def check_tee_times():
 
         # 读取上次的结果
         last_message = load_last_result_from_gist()
+        debug_log(f"[Gist] Previous content:\n{last_message}")
+        debug_log("Current content:\n"+message)
         
         # 如果有变化才发邮件
         if message != last_message:
