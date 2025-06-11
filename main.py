@@ -26,7 +26,7 @@ def is_target_time(t_str):
             hour = int(t_str.split(":")[0])
             if "PM" in t_str.upper() and hour < 12:
                 hour += 12
-            return 9 <= hour < 23
+            return 9 <= hour < 12
     except:
         pass
     return False
