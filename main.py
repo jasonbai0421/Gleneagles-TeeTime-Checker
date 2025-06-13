@@ -22,14 +22,21 @@ def debug_log(message):
 # 判断是否在上午9点到12点之间
 def is_target_time(t_str):
     try:
-        if "AM" in t_str.upper() or "PM" in t_str.upper():
-            hour = int(t_str.split(":")[0])
-            if "PM" in t_str.upper() and hour < 12:
+        t_str = t_str.strip().upper()
+        if "AM" in t_str or "PM" in t_str:
+            # 格式如 10:30 AM
+            hour_part = t_str.split(":")[0]
+            hour = int(hour_part)
+            if "PM" in t_str and hour < 12:
                 hour += 12
-            return 9 <= hour < 12
+            elif "AM" in t_str and hour == 12:
+                hour = 0
+        else:
+            # 格式如 10:30
+            hour = int(t_str.split(":")[0])
+        return 9 <= hour < 12
     except:
-        pass
-    return False
+        return False
 
 import requests
 
