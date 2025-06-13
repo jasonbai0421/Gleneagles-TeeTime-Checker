@@ -156,12 +156,12 @@ def check_tee_times():
         debug_log("Current content:\n"+message)
         
         # 如果有变化才发邮件
-        if message != last_message:
+        if not message or not last_message or not set(message.splitlines()).issubset(set(last_message.splitlines())):
             send_email(message)
             save_result_to_gist(message)
             debug_log("Email sent and result updated.")
         else:
-            debug_log("Tee times unchanged — no email sent.")
+            debug_log("Current tee times are subset of previous — no email sent.")
     else:
         debug_log("No matching tee times found.")
 
