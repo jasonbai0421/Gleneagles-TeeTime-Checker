@@ -19,6 +19,33 @@ BASE_URL = "https://w.cps.golf/WestVancouverV3/Home/nIndex?CourseId=1&Date={date
 def debug_log(message):
     print(f"[DEBUG] {message}")
 
+# 微信调用
+import json
+import requests
+
+def send_wechat_message(text):
+    webhook_url = os.getenv("WECHAT_WEBHOOK_URL")
+    if not webhook_url:
+        debug_log("❌ 未配置企业微信 Webhook URL")
+        return
+
+    payload = {
+        "msgtype": "text",
+        "text": {
+            "content": text
+        }
+    }
+
+    try:
+        response = requests.post(webhook_url, data=json.dumps(payload))
+        if response.status_code == 200:
+            debug_log("✅ 企业微信通知发送成功")
+        else:
+            debug_log(f"❌ 企业微信通知失败: {response.status_code} - {response.text}")
+    except Exception as e:
+        debug_log(f"❌ 企业微信通知异常: {e}")
+
+
 # 判断是否在上午9点到12点之间
 def is_target_time(t_str):
     try:
@@ -177,6 +204,7 @@ def send_email(content):
     with smtplib.SMTP_SSL("smtp.126.com", 465) as server:
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
         server.sendmail(EMAIL_SENDER, receivers, msg.as_string())
+    send_wechat(content)
 
 if __name__ == "__main__":
     check_tee_times()
