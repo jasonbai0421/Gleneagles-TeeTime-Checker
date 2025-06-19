@@ -35,6 +35,8 @@ jobs:
           echo "EMAIL_RECEIVER=${{ secrets.EMAIL_RECEIVER }}" >> $GITHUB_ENV
           echo "GIST_ID=${{ secrets.GIST_ID }}" >> $GITHUB_ENV
           echo "GIST_TOKEN=${{ secrets.GIST_TOKEN }}" >> $GITHUB_ENV
-          
+          echo "NORTHLANDS_EMAIL=${{ secrets.NORTHLANDS_EMAIL }}" >> $GITHUB_ENV
+          echo "NORTHLANDS_PASSWORD=${{ secrets.NORTHLANDS_PASSWORD }}" >> $GITHUB_ENV
+        
       - name: Run script
         run: python main.py
