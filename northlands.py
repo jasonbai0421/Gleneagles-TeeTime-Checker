@@ -45,16 +45,51 @@ def send_email(content):
         log(f"❌ 邮件发送失败: {e}")
 
 # ========== 登录 ==========
+from selenium.webdriver.common.keys import Keys
+
 def login(driver):
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, 20)
+    log("🔑 打开登录页面...")
     driver.get("https://northlands.cps.golf/onlineresweb/auth/verify-email?returnUrl=%2Fm%2Fsearch-teetime%2Fdefault")
+
+    # Step 1: 输入邮箱
     email_input = wait.until(EC.visibility_of_element_located((By.ID, "mat-input-0")))
     email_input.clear()
     email_input.send_keys(EMAIL)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='NEXT']/.."))).click()
+    log("📨 已输入邮箱地址")
+
+    # Step 2: 触发验证，激活 NEXT 按钮
+    email_input.send_keys(Keys.TAB)
+    time.sleep(1)
+
+    # 调试输出按钮属性
+    next_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(., 'NEXT')]")))
+    disabled = next_button.get_attribute("disabled")
+    log(f"🔍 NEXT 按钮 disabled 属性：{disabled}")
+
+    # 保存截图（可在 GitHub Actions 下载）
+    driver.save_screenshot("step1_email_entered.png")
+
+    # 判断按钮是否已激活
+    if disabled:
+        log("❌ NEXT 按钮仍然是 disabled，检查邮箱格式或触发逻辑")
+        raise Exception("NEXT 按钮未激活，登录流程中断")
+
+    # Step 3: 点击 NEXT
+    log("🟢 点击 NEXT 按钮...")
+    driver.execute_script("arguments[0].click();", next_button)
+
+    # Step 4: 输入密码
     password_input = wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='password']")))
     password_input.send_keys(PASSWORD)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='SIGN IN']/.."))).click()
+    log("🔒 已输入密码")
+
+    # Step 5: 点击 SIGN IN
+    sign_in_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'SIGN IN')]")))
+    log("🟢 点击 SIGN IN 按钮...")
+    driver.execute_script("arguments[0].click();", sign_in_button)
+
+    # Step 6: 确认跳转
     wait.until(EC.url_contains("/m/search-teetime"))
     log("✅ 登录成功")
 
