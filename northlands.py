@@ -97,7 +97,7 @@ def login(driver):
 
     # 👉 再等跳转到预约页
     try:
-        wait.until(EC.url_contains("/m/search-teetime"))
+        wait.until(EC.url_contains("onlineresweb"))
         log("✅ 登录成功并跳转到预约页面")
     except TimeoutException:
         log(f"❌ 登录后页面未跳转，当前 URL：{driver.current_url}")
