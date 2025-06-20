@@ -11,9 +11,18 @@ from webdriver_manager.chrome import ChromeDriverManager
 from email.mime.text import MIMEText
 import smtplib
 
+# ========== 日志函数 ==========
+def log(message):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    full_message = f"[{timestamp}] {message}"
+    print(full_message)
+    with open("northlands.log", "a") as f:
+        f.write(full_message + "\n")
+
+# ========== 邮件配置 ==========
 EMAIL = os.environ.get("NORTHLANDS_EMAIL")
 PASSWORD = os.environ.get("NORTHLANDS_PASSWORD")
-EMAIL_RECEIVER = os.environ.get("EMAIL_RECEIVER", EMAIL)  # 可设置为发送给自己或多收件人
+EMAIL_RECEIVER = os.environ.get("EMAIL_RECEIVER", EMAIL)
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.zoho.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
 SMTP_USER = os.environ.get("SMTP_USER", EMAIL)
@@ -26,11 +35,16 @@ def send_email(content):
     msg["From"] = EMAIL
     msg["To"] = ", ".join(receivers)
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(EMAIL, receivers, msg.as_string())
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.sendmail(EMAIL, receivers, msg.as_string())
+        log("📧 邮件已发送")
+    except Exception as e:
+        log(f"❌ 邮件发送失败: {e}")
 
+# ========== 登录 ==========
 def login(driver):
     wait = WebDriverWait(driver, 15)
     driver.get("https://northlands.cps.golf/onlineresweb/auth/verify-email?returnUrl=%2Fm%2Fsearch-teetime%2Fdefault")
@@ -42,28 +56,27 @@ def login(driver):
     password_input.send_keys(PASSWORD)
     wait.until(EC.element_to_be_clickable((By.XPATH, "//span[text()='SIGN IN']/.."))).click()
     wait.until(EC.url_contains("/m/search-teetime"))
+    log("✅ 登录成功")
 
+# ========== 设置日期 ==========
 def set_date(driver, target_date):
     wait = WebDriverWait(driver, 10)
     date_input = wait.until(EC.element_to_be_clickable((By.ID, "mat-input-3")))
     date_input.click()
-
     while True:
         month_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".mat-calendar-period-button")))
         if target_date.strftime("%B %Y") in month_elem.text:
             break
         driver.find_element(By.CSS_SELECTOR, ".mat-calendar-next-button").click()
-        time.sleep(0.4)
-
+        time.sleep(0.3)
     day = target_date.day
     wait.until(EC.element_to_be_clickable((
         By.XPATH, f"//div[contains(@class, 'mat-calendar-body-cell-content') and text()='{day}']"))).click()
-
     wait.until(EC.element_to_be_clickable(
         (By.XPATH, "//button[.//span[contains(text(), 'Modify search')]]"))).click()
-
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card")))
 
+# ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
     cards = driver.find_elements(By.CLASS_NAME, "card")
     result = []
@@ -79,10 +92,12 @@ def extract_tee_times(driver, target_date):
                 continue
     return result
 
+# ========== 日期范围 ==========
 def get_upcoming_weekdays(days=21):
     today = datetime.today()
     return [today + timedelta(days=i) for i in range(days) if (today + timedelta(days=i)).weekday() < 5]
 
+# ========== 主流程 ==========
 def main():
     chrome_options = Options()
     chrome_options.add_argument("--headless")
@@ -96,18 +111,24 @@ def main():
         login(driver)
         for day in get_upcoming_weekdays():
             try:
+                log(f"🔍 正在查询 {day.strftime('%Y-%m-%d')}...")
                 set_date(driver, day)
                 results = extract_tee_times(driver, day)
-                all_results.extend(results)
+                if results:
+                    log(f"✅ 找到 {len(results)} 条 tee time：{day.strftime('%Y-%m-%d')}")
+                    all_results.extend(results)
+                else:
+                    log(f"ℹ️ 无上午 tee time：{day.strftime('%Y-%m-%d')}")
             except Exception as e:
-                print(f"❌ Failed on {day.strftime('%Y-%m-%d')}: {e}")
+                log(f"❌ 查询失败 {day.strftime('%Y-%m-%d')}: {e}")
     finally:
         driver.quit()
 
     if all_results:
-        send_email("\n\n".join(all_results))
+        content = "\n\n".join(all_results)
+        send_email(content)
     else:
-        print("✅ No morning tee times found.")
+        log("✅ 未来三周无上午 tee time，无需发送邮件")
 
 if __name__ == "__main__":
     main()
