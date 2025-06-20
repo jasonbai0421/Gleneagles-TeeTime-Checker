@@ -145,7 +145,12 @@ def get_upcoming_weekdays(days=21):
 
 # ========== 主流程 ==========
 def main():
+    mobile_emulation = {
+        "deviceName": "iPhone 14 Pro"  # ✅ 模拟移动端设备
+    }
+
     chrome_options = Options()
+    chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-gpu")
