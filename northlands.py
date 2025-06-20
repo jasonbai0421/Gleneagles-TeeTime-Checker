@@ -52,47 +52,50 @@ def login(driver):
     log("🔑 打开登录页面...")
     driver.get("https://northlands.cps.golf/onlineresweb/auth/verify-email?returnUrl=%2Fm%2Fsearch-teetime%2Fdefault")
 
-    # Step 1: 输入邮箱
+    # Step 1: 输入邮箱并触发验证
     email_input = wait.until(EC.visibility_of_element_located((By.ID, "mat-input-0")))
     email_input.clear()
     email_input.send_keys(EMAIL)
-    log("📨 已输入邮箱地址")
-
-    # Step 2: 触发验证，激活 NEXT 按钮
     email_input.send_keys(Keys.TAB)
     time.sleep(1)
+    log("📨 已输入邮箱地址")
 
-    # 调试输出按钮属性
+    # Step 2: 检查 NEXT 按钮状态
     next_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(., 'NEXT')]")))
     disabled = next_button.get_attribute("disabled")
     log(f"🔍 NEXT 按钮 disabled 属性：{disabled}")
-
-    # 保存截图（可在 GitHub Actions 下载）
     driver.save_screenshot("step1_email_entered.png")
 
-    # 判断按钮是否已激活
     if disabled:
-        log("❌ NEXT 按钮仍然是 disabled，检查邮箱格式或触发逻辑")
-        raise Exception("NEXT 按钮未激活，登录流程中断")
+        log("❌ NEXT 按钮未激活，检查邮箱格式")
+        raise Exception("NEXT 按钮未激活")
 
-    # Step 3: 点击 NEXT
     log("🟢 点击 NEXT 按钮...")
     driver.execute_script("arguments[0].click();", next_button)
 
-    # Step 4: 输入密码
+    # Step 3: 输入密码并触发验证
     password_input = wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='password']")))
     password_input.send_keys(PASSWORD)
+    password_input.send_keys(Keys.TAB)
+    time.sleep(1)
     log("🔒 已输入密码")
 
-    # Step 5: 点击 SIGN IN
-    sign_in_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'SIGN IN')]")))
+    # Step 4: 检查 SIGN IN 按钮状态
+    sign_in_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(., 'SIGN IN')]")))
+    disabled = sign_in_button.get_attribute("disabled")
+    log(f"🔍 SIGN IN 按钮 disabled 属性：{disabled}")
+    driver.save_screenshot("step2_password_entered.png")
+
+    if disabled:
+        log("❌ SIGN IN 按钮未激活，检查密码输入")
+        raise Exception("SIGN IN 按钮未激活")
+
     log("🟢 点击 SIGN IN 按钮...")
     driver.execute_script("arguments[0].click();", sign_in_button)
 
-    # Step 6: 确认跳转
     wait.until(EC.url_contains("/m/search-teetime"))
     log("✅ 登录成功")
-
+    
 # ========== 设置日期 ==========
 def set_date(driver, target_date):
     wait = WebDriverWait(driver, 10)
