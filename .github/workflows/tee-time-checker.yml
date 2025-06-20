@@ -42,4 +42,13 @@ jobs:
         #run: python main.py
       
       - name: Run Northlands script
-        run: python northlands.py 
+        run: python northlands.py
+      
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: northlands-debug-files
+          path: |
+            *.png
+            *.log
