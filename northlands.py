@@ -107,20 +107,48 @@ def login(driver):
 # ========== 设置日期 ==========
 def set_date(driver, target_date):
     wait = WebDriverWait(driver, 10)
+
+    # ✅ 检查并关闭弹窗（如果存在）
+    try:
+        dialog = driver.find_element(By.CSS_SELECTOR, "mat-dialog-container")
+        log("⚠️ 检测到弹窗，尝试关闭...")
+        close_button = dialog.find_element(By.XPATH, ".//button[.//span[contains(text(), 'OK') or contains(text(), 'Close') or contains(text(), '×')]]")
+        close_button.click()
+        time.sleep(1)
+        log("✅ 弹窗已关闭")
+    except:
+        pass  # 没有弹窗
+
+    # ✅ 使用 JS 强制点击日期输入框，防止被遮挡
     date_input = wait.until(EC.element_to_be_clickable((By.ID, "mat-input-3")))
-    date_input.click()
+    driver.execute_script("arguments[0].click();", date_input)
+    log("📅 已点击日期输入框，准备选择日期")
+    time.sleep(0.5)  # 等待日历弹出动画
+
+    # ✅ 等待日历控件出现
+    wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "mat-calendar")))
+
+    # ✅ 切换到目标月份
     while True:
         month_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".mat-calendar-period-button")))
         if target_date.strftime("%B %Y") in month_elem.text:
             break
         driver.find_element(By.CSS_SELECTOR, ".mat-calendar-next-button").click()
         time.sleep(0.3)
+
+    # ✅ 点击目标日期
     day = target_date.day
-    wait.until(EC.element_to_be_clickable((
-        By.XPATH, f"//div[contains(@class, 'mat-calendar-body-cell-content') and text()='{day}']"))).click()
+    day_button = wait.until(EC.element_to_be_clickable((
+        By.XPATH, f"//div[contains(@class, 'mat-calendar-body-cell-content') and text()='{day}']")))
+    driver.execute_script("arguments[0].click();", day_button)
+
+    # ✅ 点击 “Modify Search” 触发更新
     wait.until(EC.element_to_be_clickable(
         (By.XPATH, "//button[.//span[contains(text(), 'Modify search')]]"))).click()
+
+    # ✅ 等待结果列表刷新
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card")))
+    log(f"📆 日期选择完成：{target_date.strftime('%Y-%m-%d')}")
 
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
