@@ -45,9 +45,13 @@ def send_email(content):
         log(f"❌ 邮件发送失败: {e}")
 
 # ========== 登录 ==========
+from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys  # ✅ 必需导入这一行
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
 
 def login(driver):
     wait = WebDriverWait(driver, 30)
