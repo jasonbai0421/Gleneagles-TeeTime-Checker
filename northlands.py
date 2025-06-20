@@ -164,6 +164,12 @@ def main():
             try:
                 log(f"🔍 正在查询 {day.strftime('%Y-%m-%d')}...")
                 set_date(driver, day)
+
+                # 👉 加一个截图，保存当前页面
+                screenshot_filename = f"debug_{day.strftime('%Y-%m-%d')}.png"
+                driver.save_screenshot(screenshot_filename)
+                log(f"📸 已保存截图：{screenshot_filename}")
+                
                 results = extract_tee_times(driver, day)
                 if results:
                     log(f"✅ 找到 {len(results)} 条 tee time：{day.strftime('%Y-%m-%d')}")
