@@ -45,14 +45,15 @@ def send_email(content):
         log(f"❌ 邮件发送失败: {e}")
 
 # ========== 登录 ==========
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 def login(driver):
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 30)
     log("🔑 打开登录页面...")
     driver.get("https://northlands.cps.golf/onlineresweb/auth/verify-email?returnUrl=%2Fm%2Fsearch-teetime%2Fdefault")
 
-    # Step 1: 输入邮箱并触发验证
     email_input = wait.until(EC.visibility_of_element_located((By.ID, "mat-input-0")))
     email_input.clear()
     email_input.send_keys(EMAIL)
@@ -60,52 +61,43 @@ def login(driver):
     time.sleep(1)
     log("📨 已输入邮箱地址")
 
-    # Step 2: 检查 NEXT 按钮状态
     next_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(., 'NEXT')]")))
-    disabled = next_button.get_attribute("disabled")
-    log(f"🔍 NEXT 按钮 disabled 属性：{disabled}")
-    driver.save_screenshot("step1_email_entered.png")
-
-    if disabled:
-        log("❌ NEXT 按钮未激活，检查邮箱格式")
-        raise Exception("NEXT 按钮未激活")
-
-    log("🟢 点击 NEXT 按钮...")
+    log(f"🔍 NEXT 按钮 disabled 属性：{next_button.get_attribute('disabled')}")
     driver.execute_script("arguments[0].click();", next_button)
 
-    # Step 3: 输入密码并触发验证
     password_input = wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='password']")))
     password_input.send_keys(PASSWORD)
     password_input.send_keys(Keys.TAB)
     time.sleep(1)
     log("🔒 已输入密码")
 
-    # Step 4: 检查 SIGN IN 按钮状态
     sign_in_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[contains(., 'SIGN IN')]")))
-    disabled = sign_in_button.get_attribute("disabled")
-    log(f"🔍 SIGN IN 按钮 disabled 属性：{disabled}")
-    driver.save_screenshot("step2_password_entered.png")
-
-    if disabled:
-        log("❌ SIGN IN 按钮未激活，检查密码输入")
-        raise Exception("SIGN IN 按钮未激活")
-
-    log("🟢 点击 SIGN IN 按钮...")
+    log(f"🔍 SIGN IN 按钮 disabled 属性：{sign_in_button.get_attribute('disabled')}")
     driver.execute_script("arguments[0].click();", sign_in_button)
+    log("🟢 点击 SIGN IN 按钮...")
 
-    # 保存页面截图
-    driver.save_screenshot("step3_after_signin.png")
+    # 👉 等待 loading 图标出现
+    try:
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "mat-progress-spinner")))
+        log("⏳ 登录中... loading 图标出现")
+    except TimeoutException:
+        log("⚠️ 登录后未显示 loading 图标，继续尝试跳转")
 
-    # 打印当前 URL 供调试
-    log(f"📍 当前页面 URL：{driver.current_url}")
+    # 👉 然后等待 loading 消失（可能出现多次）
+    try:
+        wait.until(EC.invisibility_of_element_located((By.CLASS_NAME, "mat-progress-spinner")))
+        log("✅ loading 完成，准备跳转")
+    except TimeoutException:
+        log("⚠️ loading 图标未消失，可能跳转异常")
 
-    # 原来等待 URL 包含 "/m/search-teetime"
+    # 👉 再等跳转到预约页
     try:
         wait.until(EC.url_contains("/m/search-teetime"))
         log("✅ 登录成功并跳转到预约页面")
-    except:
-        log("❌ 登录后页面未跳转到预约页，可能失败或跳转结构变更")
-        raise
+    except TimeoutException:
+        log(f"❌ 登录后页面未跳转，当前 URL：{driver.current_url}")
+        driver.save_screenshot("step4_final_state.png")
+        raise Exception("未跳转到预约页面，登录流程失败")
     
 # ========== 设置日期 ==========
 def set_date(driver, target_date):
