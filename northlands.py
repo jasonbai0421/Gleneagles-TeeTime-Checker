@@ -121,6 +121,8 @@ def main():
                     log(f"ℹ️ 无上午 tee time：{day.strftime('%Y-%m-%d')}")
             except Exception as e:
                 log(f"❌ 查询失败 {day.strftime('%Y-%m-%d')}: {e}")
+            log("⏳ 等待 2 秒后继续查询下一天...")
+            time.sleep(2)
     finally:
         driver.quit()
 
