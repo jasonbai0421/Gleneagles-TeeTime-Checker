@@ -38,11 +38,11 @@ jobs:
           echo "NORTHLANDS_EMAIL=${{ secrets.NORTHLANDS_EMAIL }}" >> $GITHUB_ENV
           echo "NORTHLANDS_PASSWORD=${{ secrets.NORTHLANDS_PASSWORD }}" >> $GITHUB_ENV
         
-      #- name: Run script
-        #run: python main.py
+      - name: Run script
+        run: python main.py
       
-      - name: Run Northlands script
-        run: python northlands.py
+      #- name: Run Northlands script
+        #run: python northlands.py
       
       - name: Upload screenshots
         if: always()
