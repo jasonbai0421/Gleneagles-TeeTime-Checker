@@ -146,7 +146,7 @@ def get_upcoming_weekdays(days=21):
 # ========== 主流程 ==========
 def main():
     mobile_emulation = {
-        "deviceName": "iPhone 14 Pro"  # ✅ 模拟移动端设备
+        "deviceName": "iPhone 14"  # ✅ 模拟移动端设备
     }
 
     chrome_options = Options()
