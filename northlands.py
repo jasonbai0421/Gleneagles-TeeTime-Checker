@@ -93,8 +93,19 @@ def login(driver):
     log("🟢 点击 SIGN IN 按钮...")
     driver.execute_script("arguments[0].click();", sign_in_button)
 
-    wait.until(EC.url_contains("/m/search-teetime"))
-    log("✅ 登录成功")
+    # 保存页面截图
+    driver.save_screenshot("step3_after_signin.png")
+
+    # 打印当前 URL 供调试
+    log(f"📍 当前页面 URL：{driver.current_url}")
+
+    # 原来等待 URL 包含 "/m/search-teetime"
+    try:
+        wait.until(EC.url_contains("/m/search-teetime"))
+        log("✅ 登录成功并跳转到预约页面")
+    except:
+        log("❌ 登录后页面未跳转到预约页，可能失败或跳转结构变更")
+        raise
     
 # ========== 设置日期 ==========
 def set_date(driver, target_date):
