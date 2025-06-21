@@ -156,6 +156,13 @@ def set_date(driver, target_date):
         log(f"❌ 日期点击失败: {e}")
         raise Exception(f"月份切换失败: {e}")
 
+    # 等待页面加载 Tee Time 内容
+    try:
+        wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "teetimecard")))
+        log("✅ Tee Time 列表已加载")
+    except TimeoutException:
+        log("⚠️ 日期选择后 Tee Time 列表未及时加载")
+        
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
     cards = driver.find_elements(By.CLASS_NAME, "card")
