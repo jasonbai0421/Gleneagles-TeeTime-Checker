@@ -56,7 +56,7 @@ def save_to_gist(lines):
     try:
         data = {
             "files": {
-                "northlands_tee_times.txt": {
+                GIST_FILENAME: {
                     "content": "\n".join(lines)
                 }
             }
@@ -68,6 +68,9 @@ def save_to_gist(lines):
         )
         if response.status_code == 200:
             log("💾 本次 tee time 已更新到 Gist")
+            log(f"✅ 写入 Gist 内容:\n{data['files'][GIST_FILENAME]['content']}")
+        else:
+            log(f"⚠️ Gist 写入失败，状态码: {response.status_code}")
     except Exception as e:
         log(f"❌ 更新 Gist 失败: {e}")
         
