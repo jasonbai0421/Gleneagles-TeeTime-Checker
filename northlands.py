@@ -94,10 +94,10 @@ def login(driver):
     try:
         wait.until(EC.url_contains("onlineresweb"))
         log("✅ 登录成功并跳转到预约页面")
-        driver.save_screenshot("step4_final_state.png")
+        #driver.save_screenshot("step4_final_state.png")
     except TimeoutException:
         log(f"❌ 登录后页面未跳转，当前 URL：{driver.current_url}")
-        driver.save_screenshot("step4_final_state.png")
+        #driver.save_screenshot("step4_final_state.png")
         raise Exception("未跳转到预约页面，登录流程失败")    
         
 # ========== 设置日期 ==========
@@ -138,9 +138,9 @@ def set_date(driver, target_date):
         pass  # 没有弹窗，忽略
 
     # 截图调试
-    screenshot_name = f"screenshot_before_click_{target_date.strftime('%Y%m%d')}.png"
-    driver.save_screenshot(screenshot_name)
-    log(f"🖼️ 截图已保存: {screenshot_name}")
+    #screenshot_name = f"screenshot_before_click_{target_date.strftime('%Y%m%d')}.png"
+    #driver.save_screenshot(screenshot_name)
+    #log(f"🖼️ 截图已保存: {screenshot_name}")
 
     # 点击日历中的日期
     # 点击日历中的日期
