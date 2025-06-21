@@ -41,8 +41,17 @@ def load_previous_tee_times():
         )
         if response.status_code == 200:
             gist_data = response.json()
+            
+            # ✅ 打印 Gist 文件名列表
+            file_list = list(gist_data["files"].keys())
+            log(f"📁 Gist 中包含的文件: {file_list}")
+            
             if GIST_FILENAME in gist_data["files"]:
                 content = gist_data["files"][GIST_FILENAME]["content"]
+                
+                # ✅ 打印读取到的内容
+                log(f"📥 读取 Gist 文件 {GIST_FILENAME} 的内容:\n{content.strip()}")
+                
                 return set(line.strip() for line in content.strip().splitlines())
             else:
                 log(f"⚠️ Gist 中未找到指定文件 {GIST_FILENAME}")
