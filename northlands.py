@@ -109,7 +109,7 @@ def login(driver):
 def set_date(driver, target_date):
     wait = WebDriverWait(driver, 10)
 
-    # ✅ 检查并关闭弹窗（如果存在）
+    # ✅ 检查并关闭弹窗
     try:
         dialog = driver.find_element(By.CSS_SELECTOR, "mat-dialog-container")
         log("⚠️ 检测到弹窗，尝试关闭...")
@@ -118,39 +118,59 @@ def set_date(driver, target_date):
         time.sleep(1)
         log("✅ 弹窗已关闭")
     except:
-        pass  # 没有弹窗
+        pass
 
-    # ✅ 使用 JS 强制点击日期输入框，防止被遮挡
-    date_input = wait.until(EC.element_to_be_clickable((By.ID, "mat-input-3")))
-    driver.execute_script("arguments[0].click();", date_input)
-    log("📅 已点击日期输入框，准备选择日期")
-    time.sleep(0.5)  # 等待日历弹出动画
+    # ✅ 点击输入框
+    try:
+        date_input = wait.until(EC.element_to_be_clickable((By.ID, "mat-input-3")))
+        driver.execute_script("arguments[0].click();", date_input)
+        log("📅 已点击日期输入框，准备选择日期")
+        time.sleep(0.5)
+    except Exception as e:
+        log(f"❌ 日期输入框点击失败: {e}")
+        driver.save_screenshot("error_click_input.png")
+        raise
 
-    # ✅ 等待日历控件出现
-    wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "mat-calendar")))
+    # ✅ 切换月份
+    try:
+        wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "mat-calendar")))
+        while True:
+            month_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".mat-calendar-period-button")))
+            if target_date.strftime("%B %Y") in month_elem.text:
+                break
+            driver.find_element(By.CSS_SELECTOR, ".mat-calendar-next-button").click()
+            time.sleep(0.3)
+    except Exception as e:
+        log(f"❌ 月份切换失败: {e}")
+        driver.save_screenshot("error_month_switch.png")
+        raise
 
-    # ✅ 切换到目标月份
-    while True:
-        month_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".mat-calendar-period-button")))
-        if target_date.strftime("%B %Y") in month_elem.text:
-            break
-        driver.find_element(By.CSS_SELECTOR, ".mat-calendar-next-button").click()
-        time.sleep(0.3)
+    # ✅ 选择具体日期
+    try:
+        day = target_date.day
+        day_button = wait.until(EC.element_to_be_clickable((
+            By.XPATH, f"//div[contains(@class, 'mat-calendar-body-cell-content') and text()='{day}']")))
+        driver.execute_script("arguments[0].click();", day_button)
+        log(f"✅ 选择日期成功：{target_date.strftime('%Y-%m-%d')}")
+    except Exception as e:
+        log(f"❌ 点击日期失败: {e}")
+        driver.save_screenshot(f"error_day_{target_date.strftime('%Y-%m-%d')}.png")
+        raise
 
-    # ✅ 点击目标日期
-    day = target_date.day
-    day_button = wait.until(EC.element_to_be_clickable((
-        By.XPATH, f"//div[contains(@class, 'mat-calendar-body-cell-content') and text()='{day}']")))
-    driver.execute_script("arguments[0].click();", day_button)
+    # ✅ 点击 Modify search
+    try:
+        modify_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[.//span[contains(text(), 'Modify search')]]")))
+        driver.execute_script("arguments[0].click();", modify_btn)
+        log("✅ 点击 Modify Search 成功")
+    except Exception as e:
+        log(f"❌ 点击 Modify Search 失败: {e}")
+        driver.save_screenshot(f"error_modify_{target_date.strftime('%Y-%m-%d')}.png")
+        with open("page_debug.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        raise
 
-    # ✅ 点击 “Modify Search” 触发更新
-    wait.until(EC.element_to_be_clickable(
-        (By.XPATH, "//button[.//span[contains(text(), 'Modify search')]]"))).click()
-
-    # ✅ 等待结果列表刷新
+    # ✅ 等待结果加载
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card")))
-    log(f"📆 日期选择完成：{target_date.strftime('%Y-%m-%d')}")
-    
 
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
