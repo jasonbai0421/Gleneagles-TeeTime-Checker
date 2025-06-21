@@ -282,7 +282,7 @@ def extract_tee_times(driver, target_date):
                 pass
 
             all_raw.append(line)
-            if 9 <= dt.hour < 12 and "4 GOLFERS" in holes_text:
+            if 9 <= dt.hour < 11 and "4 GOLFERS" in holes_text:
                 valid.append(line)
         except Exception as e:
             continue
