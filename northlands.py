@@ -107,71 +107,61 @@ def login(driver):
     
 # ========== 设置日期 ==========
 def set_date(driver, target_date):
-    wait = WebDriverWait(driver, 10)
-
-    # ✅ 检查并关闭弹窗
-    try:
-        dialog = driver.find_element(By.CSS_SELECTOR, "mat-dialog-container")
-        log("⚠️ 检测到弹窗，尝试关闭...")
-        close_button = dialog.find_element(By.XPATH, ".//button[.//span[contains(text(), 'OK') or contains(text(), 'Close') or contains(text(), '×')]]")
-        close_button.click()
-        time.sleep(1)
-        log("✅ 弹窗已关闭")
-    except:
-        pass
-
-    # ✅ 点击输入框
+    wait = WebDriverWait(driver, 15)
+    
+    # 格式化目标日期为 aria-label 需要的格式，如 24-6-2025
+    day = target_date.strftime("%d").lstrip("0")
+    month = target_date.strftime("%m").lstrip("0")
+    year = target_date.strftime("%Y")
+    aria_label = f"{day}-{month}-{year}"
+    xpath = f"//div[@role='gridcell' and @aria-label='{aria_label}']//div[contains(@class, 'btn-light')]"
+    
+    log(f"📅 正在选择日期: {aria_label}")
+    
+    # 等待并点击日期输入框
     try:
         date_input = wait.until(EC.element_to_be_clickable((By.ID, "mat-input-3")))
-        driver.execute_script("arguments[0].click();", date_input)
+        date_input.click()
         log("📅 已点击日期输入框，准备选择日期")
-        time.sleep(0.5)
+        time.sleep(1)
     except Exception as e:
-        log(f"❌ 日期输入框点击失败: {e}")
-        driver.save_screenshot("error_click_input.png")
+        log(f"❌ 点击日期输入框失败: {e}")
         raise
 
-    # ✅ 切换月份
+    # 检查是否有弹窗并关闭
     try:
-        wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "mat-calendar")))
-        while True:
-            month_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".mat-calendar-period-button")))
-            if target_date.strftime("%B %Y") in month_elem.text:
-                break
-            driver.find_element(By.CSS_SELECTOR, ".mat-calendar-next-button").click()
-            time.sleep(0.3)
-    except Exception as e:
-        log(f"❌ 月份切换失败: {e}")
-        driver.save_screenshot("error_month_switch.png")
-        raise
+        close_btn = driver.find_element(By.XPATH, "//button//span[text()='Close']")
+        if close_btn.is_displayed():
+            log("⚠️ 检测到弹窗，尝试关闭...")
+            close_btn.click()
+            time.sleep(1)
+    except:
+        pass  # 没有弹窗，忽略
 
-    # ✅ 选择具体日期
+    # 截图调试
+    screenshot_name = f"screenshot_before_click_{target_date.strftime('%Y%m%d')}.png"
+    driver.save_screenshot(screenshot_name)
+    log(f"🖼️ 截图已保存: {screenshot_name}")
+
+    # 点击日历中的日期
     try:
-        day = target_date.day
-        day_button = wait.until(EC.element_to_be_clickable((
-            By.XPATH, f"//div[contains(@class, 'mat-calendar-body-cell-content') and text()='{day}']")))
-        driver.execute_script("arguments[0].click();", day_button)
-        log(f"✅ 选择日期成功：{target_date.strftime('%Y-%m-%d')}")
+        date_button = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        driver.execute_script("arguments[0].click();", date_button)
+        log("📆 日期已点击")
     except Exception as e:
-        log(f"❌ 点击日期失败: {e}")
-        driver.save_screenshot(f"error_day_{target_date.strftime('%Y-%m-%d')}.png")
-        raise
+        log(f"❌ 日期点击失败: {e}")
+        raise Exception(f"月份切换失败: {e}")
 
-    # ✅ 点击 Modify search
+    # 点击“Modify search”按钮，刷新结果
     try:
         modify_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[.//span[contains(text(), 'Modify search')]]")))
-        driver.execute_script("arguments[0].click();", modify_btn)
-        log("✅ 点击 Modify Search 成功")
+        modify_btn.click()
+        log("🔁 已点击 Modify search，等待加载结果")
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card")))
     except Exception as e:
-        log(f"❌ 点击 Modify Search 失败: {e}")
-        driver.save_screenshot(f"error_modify_{target_date.strftime('%Y-%m-%d')}.png")
-        with open("page_debug.html", "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
+        log(f"❌ Modify search 操作失败: {e}")
         raise
-
-    # ✅ 等待结果加载
-    wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card")))
-
+        
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
     cards = driver.find_elements(By.CLASS_NAME, "card")
