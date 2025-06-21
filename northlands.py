@@ -29,22 +29,18 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
 SMTP_USER = os.environ.get("SMTP_USER", EMAIL)
 SMTP_PASS = os.environ.get("SMTP_PASS", PASSWORD)
 
+#发送邮件
 def send_email(content):
-    receivers = [email.strip() for email in EMAIL_RECEIVER.split(",")]
+    receivers = [email.strip() for email in EMAIL_RECEIVER.split(",")]  # 支持多个收件人
     msg = MIMEText(content)
-    msg["Subject"] = "Northlands Tee Time Update"
-    msg["From"] = EMAIL
+    msg["Subject"] = "Gleneagles Tee Time Reminder"
+    msg["From"] = EMAIL_SENDER
     #msg["To"] = ", ".join(receivers)
     msg["To"] = "jason_bai@126.com"
-    
-    try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(EMAIL, receivers, msg.as_string())
-        log("📧 邮件已发送")
-    except Exception as e:
-        log(f"❌ 邮件发送失败: {e}")
+
+    with smtplib.SMTP_SSL("smtp.126.com", 465) as server:
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, receivers, msg.as_string())   
 
 # ========== 登录 ==========
 from selenium import webdriver
