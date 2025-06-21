@@ -30,37 +30,47 @@ GIST_TOKEN = os.environ.get("GIST_TOKEN")  # 从 GitHub 生成的 token
 GIST_ID = os.environ.get("GIST_ID")        # 你的 Gist ID
 GIST_FILENAME = "northlands_tee_times.txt"  # 你在 Gist 中使用的文件名
 
-def get_gist_content():
+def load_previous_tee_times():
+    if not GIST_ID or not GIST_TOKEN:
+        return set()
     try:
-        headers = {"Authorization": f"token {GIST_TOKEN}"}
-        res = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers)
-        res.raise_for_status()
-        return res.json()["files"][GIST_FILENAME]["content"]
+        response = requests.get(
+            f"https://api.github.com/gists/{GIST_ID}",
+            headers={"Authorization": f"token {GIST_TOKEN}"}
+        )
+        if response.status_code == 200:
+            content = list(response.json()["files"].values())[0]["content"]
+            return set(line.strip() for line in content.strip().splitlines())
     except Exception as e:
-        log(f"⚠️ 无法读取 Gist: {e}")
-        return ""
+        log(f"⚠️ 加载 Gist 失败: {e}")
+    return set()
 
-def update_gist(content):
+def save_to_gist(lines):
+    if not GIST_ID or not GIST_TOKEN:
+        return
     try:
-        headers = {"Authorization": f"token {GIST_TOKEN}"}
         data = {
             "files": {
-                GIST_FILENAME: {
-                    "content": content
+                "northlands_tee_times.txt": {
+                    "content": "\n".join(lines)
                 }
             }
         }
-        res = requests.patch(f"https://api.github.com/gists/{GIST_ID}", headers=headers, json=data)
-        res.raise_for_status()
-        log("📝 Gist 更新成功")
+        response = requests.patch(
+            f"https://api.github.com/gists/{GIST_ID}",
+            json=data,
+            headers={"Authorization": f"token {GIST_TOKEN}"}
+        )
+        if response.status_code == 200:
+            log("💾 本次 tee time 已更新到 Gist")
     except Exception as e:
-        log(f"❌ Gist 更新失败: {e}")
-
+        log(f"❌ 更新 Gist 失败: {e}")
+        
 #发送邮件
 def send_email(content):
     receivers = [email.strip() for email in EMAIL_RECEIVER.split(",")]  # 支持多个收件人
     msg = MIMEText(content)
-    msg["Subject"] = "Gleneagles Tee Time Reminder"
+    msg["Subject"] = "Northlands Tee Time Reminder"
     msg["From"] = EMAIL_SENDER
     #msg["To"] = ", ".join(receivers)
     msg["To"] = "jason_bai@126.com"
@@ -197,7 +207,7 @@ def set_date(driver, target_date):
         log("⚠️ 日期选择后 Tee Time 列表未及时加载")
         
 # ========== 抓取 Tee Time ==========
-def extract_tee_times(driver, target_date):
+'''_def extract_tee_times(driver, target_date):
     cards = driver.find_elements(By.CLASS_NAME, "teetimecard")
     result = []
     raw_log = []
@@ -219,7 +229,53 @@ def extract_tee_times(driver, target_date):
             continue
 
     log(f"🧾 所有 tee time 原始信息（{target_date.strftime('%Y-%m-%d')}）:\n" + "\n".join(raw_log))
-    return result
+    return result '''
+
+def extract_tee_times(driver, target_date):
+    tee_cards = driver.find_elements(By.CLASS_NAME, "teetimecard")
+    all_raw = []
+    valid = []
+    for card in tee_cards:
+        try:
+            time_elem = card.find_element(By.TAG_NAME, "time")
+            time_text = time_elem.text.strip()
+            time_full = time_elem.get_attribute("datetime")  # e.g., 2025-06-24T09:36:00
+            if not time_full:
+                continue
+            dt = datetime.fromisoformat(time_full)
+            ampm = "AM" if dt.hour < 12 else "PM"
+
+            # tee time slot summary
+            line = f"{target_date.strftime('%Y-%m-%d')} | {dt.strftime('%-I:%M')} {ampm}"
+
+            # 添加 HOLES 信息
+            holes_text = ""
+            try:
+                holes = card.find_element(By.CLASS_NAME, "teetimeholes")
+                holes_text = holes.text.strip()
+                line += f" | {holes_text}"
+            except:
+                pass
+
+            # 添加价格信息
+            try:
+                price = card.find_element(By.CLASS_NAME, "teetimetableprice")
+                line += f" | {price.text.strip()}"
+            except:
+                pass
+
+            all_raw.append(line)
+            if 9 <= dt.hour < 12 and "4 GOLFERS" in holes_text:
+                valid.append(line)
+        except Exception as e:
+            continue
+
+    # 打印所有抓到的 tee time 信息方便调试
+    log(f"🧾 所有 tee time 原始信息（{target_date.strftime('%Y-%m-%d')}）:")
+    for row in all_raw:
+        log("  " + row)
+
+    return valid
 
 # ========== 日期范围 ==========
 def get_upcoming_weekdays(days=21):
