@@ -89,8 +89,8 @@ def send_email(content):
     msg = MIMEText(content)
     msg["Subject"] = "Northlands Tee Time Reminder"
     msg["From"] = EMAIL_SENDER
-    #msg["To"] = ", ".join(receivers)
-    msg["To"] = "jason_bai@126.com"
+    msg["To"] = ", ".join(receivers)
+    #msg["To"] = "jason_bai@126.com"
 
     with smtplib.SMTP_SSL("smtp.126.com", 465) as server:
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
@@ -240,7 +240,7 @@ def set_date(driver, target_date):
             t = datetime.strptime(time_str, "%I:%M")
 
             # 判断上午 9 点到 12 点，且包含 "4 GOLFERS"
-            if 9 <= t.hour < 12 and "4 GOLFERS" in text:
+            if 9 <= t.hour < 11 and "4 GOLFERS" in text:
                 result.append(f"{target_date.strftime('%Y-%m-%d')} | {text}")
         except Exception as e:
             continue
