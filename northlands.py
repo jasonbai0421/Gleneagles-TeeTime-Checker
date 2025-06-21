@@ -120,7 +120,11 @@ def set_date(driver, target_date):
     
     # 等待并点击日期输入框
     try:
-        date_input = wait.until(EC.element_to_be_clickable((By.ID, "mat-input-3")))
+        # 等待输入框渲染并可见
+        date_input = wait.until(EC.presence_of_element_located((By.ID, "mat-input-3")))
+        driver.execute_script("arguments[0].scrollIntoView(true);", date_input)
+        wait.until(EC.element_to_be_clickable((By.ID, "mat-input-3")))
+        time.sleep(1)  # 允许动画或遮挡层消失
         date_input.click()
         log("📅 已点击日期输入框，准备选择日期")
         time.sleep(1)
