@@ -23,11 +23,9 @@ def log(message):
 # ========== 邮件配置 ==========
 EMAIL = os.environ.get("NORTHLANDS_EMAIL")
 PASSWORD = os.environ.get("NORTHLANDS_PASSWORD")
-EMAIL_RECEIVER = os.environ.get("EMAIL_RECEIVER", EMAIL)
-SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.zoho.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
-SMTP_USER = os.environ.get("SMTP_USER", EMAIL)
-SMTP_PASS = os.environ.get("SMTP_PASS", PASSWORD)
+EMAIL_SENDER = os.getenv("EMAIL_SENDER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 
 #发送邮件
 def send_email(content):
