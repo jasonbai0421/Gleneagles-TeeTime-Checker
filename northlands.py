@@ -99,6 +99,7 @@ def login(driver):
     try:
         wait.until(EC.url_contains("onlineresweb"))
         log("✅ 登录成功并跳转到预约页面")
+        driver.save_screenshot("step4_final_state.png")
     except TimeoutException:
         log(f"❌ 登录后页面未跳转，当前 URL：{driver.current_url}")
         driver.save_screenshot("step4_final_state.png")
@@ -149,6 +150,7 @@ def set_date(driver, target_date):
     # ✅ 等待结果列表刷新
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card")))
     log(f"📆 日期选择完成：{target_date.strftime('%Y-%m-%d')}")
+    
 
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
