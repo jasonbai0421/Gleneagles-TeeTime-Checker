@@ -182,9 +182,12 @@ def set_date(driver, target_date):
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
     cards = driver.find_elements(By.CLASS_NAME, "card")
+    all_text = []
     result = []
+
     for card in cards:
         text = card.text.strip()
+        all_text.append(text)
         if "AM" in text:
             try:
                 lines = text.split('\n')
@@ -193,6 +196,8 @@ def extract_tee_times(driver, target_date):
                     result.append(f"{target_date.strftime('%Y-%m-%d')} | {text}")
             except:
                 continue
+    
+    log(f"🧾 所有 tee time 原始信息（{target_date.strftime('%Y-%m-%d')}）:\n" + "\n----\n".join(all_text))
     return result
 
 # ========== 日期范围 ==========
