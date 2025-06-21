@@ -26,6 +26,35 @@ PASSWORD = os.environ.get("NORTHLANDS_PASSWORD")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
+GIST_TOKEN = os.environ.get("GIST_TOKEN")  # 从 GitHub 生成的 token
+GIST_ID = os.environ.get("GIST_ID")        # 你的 Gist ID
+GIST_FILENAME = "northlands_tee_times.txt"  # 你在 Gist 中使用的文件名
+
+def get_gist_content():
+    try:
+        headers = {"Authorization": f"token {GIST_TOKEN}"}
+        res = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers)
+        res.raise_for_status()
+        return res.json()["files"][GIST_FILENAME]["content"]
+    except Exception as e:
+        log(f"⚠️ 无法读取 Gist: {e}")
+        return ""
+
+def update_gist(content):
+    try:
+        headers = {"Authorization": f"token {GIST_TOKEN}"}
+        data = {
+            "files": {
+                GIST_FILENAME: {
+                    "content": content
+                }
+            }
+        }
+        res = requests.patch(f"https://api.github.com/gists/{GIST_ID}", headers=headers, json=data)
+        res.raise_for_status()
+        log("📝 Gist 更新成功")
+    except Exception as e:
+        log(f"❌ Gist 更新失败: {e}")
 
 #发送邮件
 def send_email(content):
@@ -237,11 +266,21 @@ def main():
     finally:
         driver.quit()
 
-    if all_results:
-        content = "\n\n".join(all_results)
-        send_email(content)
-    else:
+    # 将结果按行拼接成字符串
+    new_content = "\n\n".join(all_results).strip()
+
+    if not new_content:
         log("✅ 未来三周无上午 tee time，无需发送邮件")
+        return
+
+    # 读取上一次的内容
+    old_content = get_gist_content().strip()
+
+    if new_content == old_content:
+        log("🔁 tee time 无变化，无需发送邮件")
+    else:
+        send_email(new_content)
+        update_gist(new_content)
 
 if __name__ == "__main__":
     main()
