@@ -41,8 +41,8 @@ jobs:
       - name: Run script
         run: python main.py
       
-      #- name: Run Northlands script
-        #run: python northlands.py
+      - name: Run Northlands script
+        run: python northlands.py
       
       - name: Upload screenshots
         if: always()
