@@ -34,8 +34,9 @@ def send_email(content):
     msg = MIMEText(content)
     msg["Subject"] = "Northlands Tee Time Update"
     msg["From"] = EMAIL
-    msg["To"] = ", ".join(receivers)
-
+    #msg["To"] = ", ".join(receivers)
+    msg["To"] = "jason_bai@126.com"
+    
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
