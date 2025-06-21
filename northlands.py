@@ -331,12 +331,22 @@ def main():
     current = set(all_results)
     previous = load_previous_tee_times()
 
-    if current and not current.issubset(previous):
-        content = "\n".join(sorted(current))  # ✅ 每条 tee time 一行
-        send_email(content)
-        save_to_gist(sorted(current))
-    else:
-        log("✅ 无新增 tee time，不发送邮件")
+    if current:
+        content = "\n".join(sorted(current))
+        log("📤 当前抓取结果内容:\n" + content)
 
+        log(f"📥 上一次 Gist 中记录的 tee time 数量: {len(previous)}")
+        log(f"📈 本次抓取 tee time 数量: {len(current)}")
+
+        # ✅ 如果当前内容不是上次的子集，则认为有新增
+        if not previous or not current.issubset(previous):
+            send_email(content)
+            save_to_gist(sorted(current))  # 保存新内容
+            log("📬 邮件已发送，Gist 已更新")
+        else:
+            log("✅ 当前 tee time 是上次的子集或相同，不发送邮件")
+    else:
+        log("✅ 未来三周无上午 tee time，无需发送邮件")
+        
 if __name__ == "__main__":
     main()
