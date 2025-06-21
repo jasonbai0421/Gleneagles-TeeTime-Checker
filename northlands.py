@@ -40,8 +40,12 @@ def load_previous_tee_times():
             headers={"Authorization": f"token {GIST_TOKEN}"}
         )
         if response.status_code == 200:
-            content = list(response.json()["files"].values())[0]["content"]
-            return set(line.strip() for line in content.strip().splitlines())
+            gist_data = response.json()
+            if GIST_FILENAME in gist_data["files"]:
+                content = gist_data["files"][GIST_FILENAME]["content"]
+                return set(line.strip() for line in content.strip().splitlines())
+            else:
+                log(f"⚠️ Gist 中未找到指定文件 {GIST_FILENAME}")
     except Exception as e:
         log(f"⚠️ 加载 Gist 失败: {e}")
     return set()
