@@ -156,29 +156,6 @@ def set_date(driver, target_date):
         log(f"❌ 日期点击失败: {e}")
         raise Exception(f"月份切换失败: {e}")
 
-    # 点击“Modify search”按钮，刷新结果
-    try:
-        buttons = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "modify-search-button")))
-        for btn in buttons:
-            if btn.is_displayed() and btn.is_enabled():
-               driver.execute_script("arguments[0].scrollIntoView(true);", btn)
-               time.sleep(0.5)
-               driver.execute_script("arguments[0].click();", btn)
-               log("🔁 已点击 Modify search，等待加载结果")
-               break
-        else:
-            raise Exception("未找到可点击的 Modify search 按钮")
-
-        # 等待出现 tee time 卡片或页面无结果提示
-        WebDriverWait(driver, 20).until(
-            lambda d: len(d.find_elements(By.CLASS_NAME, "teetimecard")) > 0 or
-                      "No tee times" in d.page_source
-        )
-    except Exception as e:
-        driver.save_screenshot(f"error_modify_{target_date.strftime('%Y%m%d')}.png")
-        log(f"❌ Modify search 操作失败: {e}")
-        raise
-        
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
     cards = driver.find_elements(By.CLASS_NAME, "card")
