@@ -165,23 +165,27 @@ def set_date(driver, target_date):
         
 # ========== 抓取 Tee Time ==========
 def extract_tee_times(driver, target_date):
-    cards = driver.find_elements(By.CLASS_NAME, "card")
-    all_text = []
+    cards = driver.find_elements(By.CLASS_NAME, "teetimecard")
     result = []
+    raw_log = []
 
     for card in cards:
-        text = card.text.strip()
-        all_text.append(text)
-        if "AM" in text:
-            try:
-                lines = text.split('\n')
-                t = datetime.strptime(lines[0], "%I:%M %p")
-                if 9 <= t.hour < 12:
-                    result.append(f"{target_date.strftime('%Y-%m-%d')} | {text}")
-            except:
-                continue
-    
-    log(f"🧾 所有 tee time 原始信息（{target_date.strftime('%Y-%m-%d')}）:\n" + "\n----\n".join(all_text))
+        try:
+            text = card.text.strip()
+            raw_log.append(text)
+
+            # 抓取时间字段
+            time_element = card.find_element(By.TAG_NAME, "time")
+            time_str = time_element.text.strip()
+            t = datetime.strptime(time_str, "%I:%M")
+
+            # 判断上午 9 点到 12 点，且包含 "4 GOLFERS"
+            if 9 <= t.hour < 12 and "4 GOLFERS" in text:
+                result.append(f"{target_date.strftime('%Y-%m-%d')} | {text}")
+        except Exception as e:
+            continue
+
+    log(f"🧾 所有 tee time 原始信息（{target_date.strftime('%Y-%m-%d')}）:\n" + "\n".join(raw_log))
     return result
 
 # ========== 日期范围 ==========
