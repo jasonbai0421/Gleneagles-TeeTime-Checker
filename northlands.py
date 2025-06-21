@@ -322,21 +322,16 @@ def main():
     finally:
         driver.quit()
 
-    # 将结果按行拼接成字符串
-    new_content = "\n\n".join(all_results).strip()
+    # 使用 set 结构去重比较
+    current = set(all_results)
+    previous = load_previous_tee_times()
 
-    if not new_content:
-        log("✅ 未来三周无上午 tee time，无需发送邮件")
-        return
-
-    # 读取上一次的内容
-    old_content = get_gist_content().strip()
-
-    if new_content == old_content:
-        log("🔁 tee time 无变化，无需发送邮件")
+    if current and not current.issubset(previous):
+        content = "\n".join(sorted(current))  # ✅ 每条 tee time 一行
+        send_email(content)
+        save_to_gist(sorted(current))
     else:
-        send_email(new_content)
-        update_gist(new_content)
+        log("✅ 无新增 tee time，不发送邮件")
 
 if __name__ == "__main__":
     main()
