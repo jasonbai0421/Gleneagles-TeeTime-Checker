@@ -148,13 +148,22 @@ def set_date(driver, target_date):
     log(f"🖼️ 截图已保存: {screenshot_name}")
 
     # 点击日历中的日期
+    # 点击日历中的日期
     try:
         date_button = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
         driver.execute_script("arguments[0].click();", date_button)
         log("📆 日期已点击")
+        
+        # ✅ 新增：等待 tee time 卡片至少加载一个，确保日历关闭页面刷新完成
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "teetimecard"))
+        )
+        time.sleep(1)  # 稍作等待以保证 DOM 稳定
+        log("✅ 页面已刷新，teetimecard 元素已出现")
+
     except Exception as e:
-        log(f"❌ 日期点击失败: {e}")
-        raise Exception(f"月份切换失败: {e}")
+        log(f"❌ 日期点击或等待刷新失败: {e}")
+        raise Exception(f"日期点击或 tee time 刷新失败: {e}")
 
     # 等待页面加载 Tee Time 内容
     try:
