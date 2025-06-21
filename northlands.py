@@ -95,25 +95,15 @@ def login(driver):
     except TimeoutException:
         log("⚠️ loading 图标未消失，可能跳转异常")
         
-    # 点击“Modify search”按钮，刷新结果
+    # 👉 再等跳转到预约页
     try:
-        # 等待按钮出现（有时多按钮，锁定 class）
-        buttons = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "modify-search-button")))
-        for btn in buttons:
-            if btn.is_displayed() and btn.is_enabled():
-                driver.execute_script("arguments[0].click();", btn)
-                log("🔁 已点击 Modify search，等待加载结果")
-                break
-        else:
-            raise Exception("未找到可点击的 Modify search 按钮")
-
-        # 等待至少一个 tee time 渲染出来（避免 premature 截图）
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'teetimecard')]"))
-        )
-    except Exception as e:
-        log(f"❌ Modify search 操作失败: {e}")
-        raise
+        wait.until(EC.url_contains("onlineresweb"))
+        log("✅ 登录成功并跳转到预约页面")
+        driver.save_screenshot("step4_final_state.png")
+    except TimeoutException:
+        log(f"❌ 登录后页面未跳转，当前 URL：{driver.current_url}")
+        driver.save_screenshot("step4_final_state.png")
+        raise Exception("未跳转到预约页面，登录流程失败")    
         
 # ========== 设置日期 ==========
 def set_date(driver, target_date):
@@ -164,11 +154,24 @@ def set_date(driver, target_date):
 
     # 点击“Modify search”按钮，刷新结果
     try:
-        modify_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[.//span[contains(text(), 'Modify search')]]")))
-        modify_btn.click()
-        log("🔁 已点击 Modify search，等待加载结果")
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card")))
+        buttons = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "modify-search-button")))
+        for btn in buttons:
+            if btn.is_displayed() and btn.is_enabled():
+               driver.execute_script("arguments[0].scrollIntoView(true);", btn)
+               time.sleep(0.5)
+               driver.execute_script("arguments[0].click();", btn)
+               log("🔁 已点击 Modify search，等待加载结果")
+               break
+        else:
+            raise Exception("未找到可点击的 Modify search 按钮")
+
+        # 等待出现 tee time 卡片或页面无结果提示
+        WebDriverWait(driver, 20).until(
+            lambda d: len(d.find_elements(By.CLASS_NAME, "teetimecard")) > 0 or
+                      "No tee times" in d.page_source
+        )
     except Exception as e:
+        driver.save_screenshot(f"error_modify_{target_date.strftime('%Y%m%d')}.png")
         log(f"❌ Modify search 操作失败: {e}")
         raise
         
