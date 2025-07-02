@@ -173,12 +173,22 @@ def check_tee_times():
         debug_log("Current content:\n"+message)        
 
         # 如果有变化才发邮件
-        if not message or not last_message or not set(message.splitlines()).issubset(set(last_message.splitlines())):
+        #if not message or not last_message or not set(message.splitlines()).issubset(set(last_message.splitlines())):
+        #    send_email(message)
+        #    save_result_to_gist(message)
+        #    debug_log("Email sent and result updated.")
+        #else:
+        #    debug_log("Current tee times are subset of previous — no email sent.")
+
+        # 比较时用纯文本 found_slots 和 last_lines
+        current_lines_set = set(found_slots)
+        if not current_lines_set or not last_lines or not current_lines_set.issubset(last_lines):
             send_email(message)
-            save_result_to_gist(message)
+            save_result_to_gist("\n".join(found_slots))  # 只保存纯文本
             debug_log("Email sent and result updated.")
         else:
             debug_log("Current tee times are subset of previous — no email sent.")
+            
     else:
         debug_log("No matching tee times found.")
 
