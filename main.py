@@ -147,6 +147,12 @@ def check_tee_times():
 
     driver.quit()
     if found_slots:
+        
+        # 读取上次的结果
+        last_message = load_last_result_from_gist()
+        debug_log(f"[Gist] Previous content:\n{last_message}")
+        debug_log("Current content:\n"+message)        
+
         #message = "\n".join(found_slots)
         # 构造 HTML 消息（带链接 + 红色标注新 tee time）
         message_lines = []
@@ -165,11 +171,6 @@ def check_tee_times():
         
         debug_log("Matched Tee Times:\n" + message)
 
-        # 读取上次的结果
-        last_message = load_last_result_from_gist()
-        debug_log(f"[Gist] Previous content:\n{last_message}")
-        debug_log("Current content:\n"+message)
-        
         # 如果有变化才发邮件
         if not message or not last_message or not set(message.splitlines()).issubset(set(last_message.splitlines())):
             send_email(message)
