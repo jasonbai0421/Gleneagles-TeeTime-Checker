@@ -147,7 +147,22 @@ def check_tee_times():
 
     driver.quit()
     if found_slots:
-        message = "\n".join(found_slots)
+        #message = "\n".join(found_slots)
+        # 构造 HTML 消息（带链接 + 红色标注新 tee time）
+        message_lines = []
+        # 获取上次纯文本记录（用换行分隔）
+        last_lines = set(last_message.strip().splitlines()) if last_message else set()
+        for line in found_slots:
+            date_part = line.split(" ")[0]
+            url = BASE_URL.format(date=date_part)
+            # 如果是新出现的 tee time，用红色高亮显示
+            if line not in last_lines:
+                line_with_link = f'<span style="color:red">{line}</span> <a href="{url}">去预订</a>'
+            else:
+                line_with_link = f'{line} <a href="{url}">去预订</a>'
+            message_lines.append(line_with_link)
+        message = "<br>".join(message_lines)  # 最终 HTML 邮件内容
+        
         debug_log("Matched Tee Times:\n" + message)
 
         # 读取上次的结果
@@ -169,7 +184,8 @@ def check_tee_times():
 # 发邮件
 def send_email(content):
     receivers = [email.strip() for email in EMAIL_RECEIVER.split(",")]  # 支持多个收件人
-    msg = MIMEText(content)
+    #msg = MIMEText(content)
+    msg = MIMEText(content, "html")  # ← 让它支持 HTML 格式
     msg["Subject"] = "Gleneagles Tee Time Reminder"
     msg["From"] = EMAIL_SENDER
     msg["To"] = ", ".join(receivers)
