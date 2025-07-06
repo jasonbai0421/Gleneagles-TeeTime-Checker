@@ -38,8 +38,7 @@ jobs:
       
       #给gleneagles.py用的
       - name: Write Google Credentials JSON
-        run: |
-          echo "${{ secrets.GOOGLE_CREDENTIALS_JSON }}" > teetime-465103-5096aca64eb6.json  
+        run: echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > teetime-465103-5096aca64eb6.json
       - name: Debug Show JSON file size
         run: |
           ls -lh teetime-465103-5096aca64eb6.json
