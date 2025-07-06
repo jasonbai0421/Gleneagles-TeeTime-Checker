@@ -37,7 +37,7 @@ jobs:
       - name: Write Google Credentials JSON
         run: echo "$GOOGLE_CREDENTIALS_JSON" > teetime-465103-5096aca64eb6.json
         env:
-          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       
       - name: Set environment variables
         run: |
