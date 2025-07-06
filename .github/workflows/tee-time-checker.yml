@@ -32,7 +32,13 @@ jobs:
           pip install gspread google-auth
           sudo apt-get update
           sudo apt-get install -y wget unzip gnupg curl fonts-liberation libnss3 \libatk1.0-0 libxss1 libappindicator3-1 libasound2t64 libgbm1 libgtk-3-0 #\chromium-browser
-
+      
+      #给gleneagles.py用的
+      - name: Write Google Credentials JSON
+        run: echo "$GOOGLE_CREDENTIALS" > teetime-465103-5096aca64eb6.json
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+      
       - name: Set environment variables
         run: |
           echo "EMAIL_SENDER=${{ secrets.EMAIL_SENDER }}" >> $GITHUB_ENV
