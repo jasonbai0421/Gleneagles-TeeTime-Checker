@@ -25,9 +25,18 @@ from google.oauth2.service_account import Credentials
 
 ## 获取 Google Sheet 中用户配置
 def load_user_preferences():
-    credentials_file = "teetime-465103-5096aca64eb6.json"  # 文件名保持和 GitHub Secret 上传一致
+    # 从环境变量中读取 JSON 字符串（必须是 GitHub Secret 中设置的内容）
+    credentials_json_str = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if not credentials_json_str:
+        raise ValueError("❌ GOOGLE_CREDENTIALS_JSON is not set or empty.")
+
     scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    creds = Credentials.from_service_account_file(credentials_file, scopes=scopes)
+
+    # 解析 JSON 字符串为字典
+    info = json.loads(credentials_json_str)
+
+    # 创建 credentials 对象
+    creds = Credentials.from_service_account_info(info, scopes=scopes)
 
     gc = gspread.authorize(creds)
     sh = gc.open("teetime")  # 表格文件名
