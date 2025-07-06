@@ -50,7 +50,7 @@ jobs:
           echo "NORTHLANDS_PASSWORD=${{ secrets.NORTHLANDS_PASSWORD }}" >> $GITHUB_ENV
         
       - name: Run script
-        run: python gleneagles.py
+      #  run: python gleneagles.py
  
       #- name: Run script
       #  run: python main.py
