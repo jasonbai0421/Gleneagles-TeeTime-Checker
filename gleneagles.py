@@ -21,6 +21,7 @@ def debug_log(message):
 
 ##新增逻辑读取googlesheet
 import gspread
+import json
 from google.oauth2.service_account import Credentials
 
 ## 获取 Google Sheet 中用户配置
