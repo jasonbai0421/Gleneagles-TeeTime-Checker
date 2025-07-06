@@ -19,6 +19,58 @@ BASE_URL = "https://w.cps.golf/WestVancouverV3/Home/nIndex?CourseId=1&Date={date
 def debug_log(message):
     print(f"[DEBUG] {message}")
 
+##新增逻辑读取googlesheet
+import gspread
+from google.oauth2.service_account import Credentials
+
+## 获取 Google Sheet 中用户配置
+def load_user_preferences():
+    credentials_file = "teetime-465103-5096aca64eb6.json"  # 文件名保持和 GitHub Secret 上传一致
+    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    creds = Credentials.from_service_account_file(credentials_file, scopes=scopes)
+
+    gc = gspread.authorize(creds)
+    sh = gc.open("teetime")  # 表格文件名
+    worksheet = sh.sheet1     # 第一张表（即表单响应汇总）
+
+    records = worksheet.get_all_records()
+    user_prefs = []
+    for row in records:
+        email = row.get("邮箱地址", "").strip()
+        watch_days = row.get("监控日期", "").strip()
+        start_time = row.get("监控开始时间", "").strip()
+        end_time = row.get("监控结束时间", "").strip()
+        if email and start_time and end_time:
+            user_prefs.append({
+                "email": email,
+                "days": watch_days,
+                "start": start_time,
+                "end": end_time
+            })
+    return user_prefs
+
+## 判断该 tee time 是否在用户设定时间范围
+def is_time_in_range(tee_time, start_str, end_str):
+    fmt = "%H:%M"
+    try:
+        tee = datetime.strptime(tee_time, fmt).time()
+        start = datetime.strptime(start_str, fmt).time()
+        end = datetime.strptime(end_str, fmt).time()
+        return start <= tee <= end
+    except Exception:
+        return False
+
+## 判断是否满足用户设置的日期范围
+def is_day_match(date_obj, watch_days):
+    weekday = date_obj.weekday()
+    if watch_days == "每天":
+        return True
+    elif watch_days == "工作日":
+        return weekday < 5
+    elif watch_days == "周末":
+        return weekday >= 5
+    return False
+
 # 判断是否在上午9点到12点之间
 def is_target_time(t_str):
     try:
