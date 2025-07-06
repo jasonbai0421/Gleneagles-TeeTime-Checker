@@ -193,20 +193,26 @@ def check_tee_times():
             debug_log(f"Error fetching tee times for {date_str}: {e}")
 
     driver.quit()
+    
+    for user in user_prefs:
+        email = user["email"]
+        slots = all_matched.get(email, [])
 
-    # 加载上次记录
-    last_message = load_last_result_from_gist()
-    last_lines = set(last_message.strip().splitlines()) if last_message else set()
+        if not slots:
+            continue
 
-    all_new_lines = []
+        last_message = load_last_result_from_gist(email)
+        last_lines = set(last_message.strip().splitlines()) if last_message else set()
 
-    for email, slots in all_matched.items():
         message_lines = []
+        new_lines = []
+
         for line in slots:
             date_part = line.split(" ")[0]
             url = BASE_URL.format(date=date_part)
             if line not in last_lines:
                 line_with_link = f'<span style="color:red">{line}</span> <a href="{url}">去预订</a>'
+                new_lines.append(line)
             else:
                 line_with_link = f'{line} <a href="{url}">去预订</a>'
             message_lines.append(line_with_link)
@@ -215,14 +221,14 @@ def check_tee_times():
             message_html = "<br>".join(message_lines)
             debug_log(f"[邮件] 给 {email} 发送：\n{message_html}")
             send_email(message_html, [email])
-            all_new_lines.extend(slots)
 
-    # 更新 Gist 只存纯文本
-    if all_new_lines and not set(all_new_lines).issubset(last_lines):
-        save_result_to_gist("\n".join(sorted(set(last_lines | set(all_new_lines)))))
-        debug_log("Gist 已更新")
-    else:
-        debug_log("无新增 tee time，Gist 未更新")
+        # 仅当有新内容才更新 gist
+        if new_lines:
+            combined = sorted(set(last_lines | set(slots)))
+            save_result_to_gist(email, "\n".join(combined))
+            debug_log(f"[Gist] 更新 {email} 的历史记录")
+        else:
+            debug_log(f"[Gist] {email} 没有新 tee time，跳过更新")
 
 # 发邮件
 def send_email(content, receivers):
