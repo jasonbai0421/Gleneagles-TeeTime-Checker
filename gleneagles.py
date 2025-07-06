@@ -93,36 +93,32 @@ import requests
 GIST_ID = os.getenv("GIST_ID")
 GIST_TOKEN = os.getenv("GIST_TOKEN")
 
-def load_last_result_from_gist():
+def get_user_gist_filename(email):
+    sanitized = email.replace("@", "_at_").replace(".", "_dot_")
+    return f"last_result_{sanitized}.txt"
+
+def load_last_result_from_gist(email):
+    filename = get_user_gist_filename(email)
     try:
         headers = {
             "Authorization": f"Bearer {GIST_TOKEN}",
             "Accept": "application/vnd.github+json"
         }
         url = f"https://api.github.com/gists/{GIST_ID}"
-        debug_log(f"[Gist] Fetching Gist from: {url}")
-        debug_log(f"[Gist] Using Token (first 6 chars): {GIST_TOKEN[:6]}...")
-
         response = requests.get(url, headers=headers)
-
-        debug_log(f"[Gist] Status Code: {response.status_code}")
-        debug_log(f"[Gist] Response Text: {response.text[:200]}...")  # 只显示前200字避免太长
 
         if response.status_code == 200:
             files = response.json().get("files", {})
-            content = files.get("last_result.txt", {}).get("content", "")
+            content = files.get(filename, {}).get("content", "")
             return content.strip()
-        elif response.status_code == 401:
-            debug_log("[Gist] ❌ Unauthorized (401): Token 无效或权限不足")
-        elif response.status_code == 404:
-            debug_log("[Gist] ❌ Not Found (404): Gist ID 不存在或你无权访问")
         else:
-            debug_log(f"[Gist] ⚠️ 未知错误: {response.status_code}")
+            debug_log(f"[Gist] Error loading {filename}: {response.status_code}")
     except Exception as e:
         debug_log(f"[Gist] ⚠️ 异常: {e}")
     return ""
 
-def save_result_to_gist(content):
+def save_result_to_gist(email, content):
+    filename = get_user_gist_filename(email)
     try:
         headers = {
             "Authorization": f"Bearer {GIST_TOKEN}",
@@ -130,19 +126,19 @@ def save_result_to_gist(content):
         }
         data = {
             "files": {
-                "last_result.txt": {
+                filename: {
                     "content": content
                 }
             }
         }
         response = requests.patch(f"https://api.github.com/gists/{GIST_ID}", headers=headers, json=data)
         if response.status_code == 200:
-            debug_log("Gist updated successfully.")
+            debug_log(f"Gist updated for {email}.")
         else:
-            debug_log(f"Failed to update Gist: {response.status_code}")
+            debug_log(f"Failed to update Gist for {email}: {response.status_code}")
     except Exception as e:
-        debug_log(f"Error saving Gist: {e}")
-
+        debug_log(f"Error saving Gist for {email}: {e}")
+        
 # 抓取一个日期的数据
 def check_tee_times():
     user_prefs = load_user_preferences()
