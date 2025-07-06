@@ -44,11 +44,14 @@ jobs:
           echo "NORTHLANDS_PASSWORD=${{ secrets.NORTHLANDS_PASSWORD }}" >> $GITHUB_ENV
         
       - name: Run script
-        run: python main.py
-      
-      - name: Run Northlands script
-        run: python northlands.py
-      
+        run: python gleneagles.py
+ 
+      #- name: Run script
+      #  run: python main.py
+        
+      #- name: Run Northlands script
+      #  run: python northlands.py
+  
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
