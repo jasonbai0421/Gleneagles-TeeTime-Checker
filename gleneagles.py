@@ -35,10 +35,9 @@ def load_user_preferences():
     creds = Credentials.from_service_account_file(credentials_file, scopes=scopes)    
 
     # 解析 JSON 字符串为字典
-    info = json.loads(credentials_json_str)
-
+    #info = json.loads(credentials_json_str)
     # 创建 credentials 对象
-    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    #creds = Credentials.from_service_account_info(info, scopes=scopes)
 
     gc = gspread.authorize(creds)
     sh = gc.open("teetime")  # 表格文件名
