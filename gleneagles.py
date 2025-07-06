@@ -71,23 +71,21 @@ def is_day_match(date_obj, watch_days):
         return weekday >= 5
     return False
 
-# 判断是否在上午9点到12点之间
-def is_target_time(t_str):
+def is_target_time_in_range(t_str, start_time_str, end_time_str):
     try:
-        t_str = t_str.strip().upper()
-        if "AM" in t_str or "PM" in t_str:
-            # 格式如 10:30 AM
-            hour_part = t_str.split(":")[0]
-            hour = int(hour_part)
-            if "PM" in t_str and hour < 12:
-                hour += 12
-            elif "AM" in t_str and hour == 12:
-                hour = 0
-        else:
-            # 格式如 10:30
-            hour = int(t_str.split(":")[0])
-        return 9 <= hour < 12
-    except:
+        def parse_time(s):
+            s = s.strip().upper()
+            if "AM" in s or "PM" in s:
+                return datetime.strptime(s, "%I:%M %p").time()
+            else:
+                return datetime.strptime(s, "%H:%M").time()
+
+        t = parse_time(t_str)
+        start = parse_time(start_time_str)
+        end = parse_time(end_time_str)
+        return start <= t <= end
+    except Exception as e:
+        debug_log(f"[TimeParseError] Failed to parse time '{t_str}' or range ({start_time_str}-{end_time_str}): {e}")
         return False
 
 import requests
