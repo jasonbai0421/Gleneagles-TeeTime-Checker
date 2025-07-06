@@ -144,8 +144,13 @@ def save_result_to_gist(content):
         debug_log(f"Error saving Gist: {e}")
 
 # 抓取一个日期的数据
-# 抓取一个日期的数据
 def check_tee_times():
+    user_prefs = load_user_preferences()
+
+    if not user_prefs:
+        debug_log("❌ 无用户设置，跳过抓取")
+        return
+
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -154,16 +159,11 @@ def check_tee_times():
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
 
-    found_slots = []
-
     today = datetime.today()
+    all_matched = {}  # email => [lines]
+
     for offset in range(1, 8):  # 次日到+8天
         target_date = today + timedelta(days=offset)
-        # ➤ 只处理周一到周五
-        if target_date.weekday() > 4:
-            debug_log(f"Skipping {target_date.strftime('%Y-%-m-%-d')} (Weekend)")
-            continue
-
         date_str = target_date.strftime("%Y-%-m-%-d")
         url = BASE_URL.format(date=date_str)
         debug_log(f"Checking {date_str} ... URL: {url}")
@@ -172,89 +172,72 @@ def check_tee_times():
         time.sleep(5)  # 确保加载完页面
 
         try:
-            # 每一个 tee time 都是一个 div.teetime
             rows = driver.find_elements(By.CSS_SELECTOR, "div.teetime")
             debug_log(f"Found {len(rows)} rows on {date_str}")
+
             for row in rows:
                 try:
-                    # 读取时间
                     time_el = row.find_element(By.CSS_SELECTOR, "h3.timeDiv span")
                     t_str = time_el.text.strip()
-
-                    # 读取人数（如 Single Only 或 2 - 4 players）
                     player_info_el = row.find_element(By.CSS_SELECTOR, "div.player p")
                     player_info = player_info_el.text.strip()
 
-                    debug_log(f"Raw time: {t_str}, Players: {player_info}")
-
-                    # 判断是否符合时间要求，且至少有“4”这个关键词（可以调整逻辑）
-                    if ("4" in player_info or "2 - 4" in player_info) and is_target_time(t_str):
-                        found_slots.append(f"{date_str} {t_str} - {player_info}")
+                    for user in user_prefs:
+                        if not is_day_match(target_date, user["days"]):
+                            continue
+                        if not is_target_time_in_range(t_str, user["start"], user["end"]):
+                            continue
+                        if "4" not in player_info and "2 - 4" not in player_info:
+                            continue
+                        line = f"{date_str} {t_str} - {player_info}"
+                        all_matched.setdefault(user["email"], []).append(line)
                 except Exception as e:
                     debug_log(f"Failed to parse a row: {e}")
         except Exception as e:
             debug_log(f"Error fetching tee times for {date_str}: {e}")
 
     driver.quit()
-    if found_slots:
-        
-        # 读取上次的结果
-        last_message = load_last_result_from_gist()
-        
-        #message = "\n".join(found_slots)
-        # 构造 HTML 消息（带链接 + 红色标注新 tee time）
+
+    # 加载上次记录
+    last_message = load_last_result_from_gist()
+    last_lines = set(last_message.strip().splitlines()) if last_message else set()
+
+    all_new_lines = []
+
+    for email, slots in all_matched.items():
         message_lines = []
-        # 获取上次纯文本记录（用换行分隔）
-        last_lines = set(last_message.strip().splitlines()) if last_message else set()
-        for line in found_slots:
+        for line in slots:
             date_part = line.split(" ")[0]
             url = BASE_URL.format(date=date_part)
-            # 如果是新出现的 tee time，用红色高亮显示
             if line not in last_lines:
                 line_with_link = f'<span style="color:red">{line}</span> <a href="{url}">去预订</a>'
             else:
                 line_with_link = f'{line} <a href="{url}">去预订</a>'
             message_lines.append(line_with_link)
-        message = "<br>".join(message_lines)  # 最终 HTML 邮件内容
-        
-        debug_log("Matched Tee Times:\n" + message)
-        
-        debug_log(f"[Gist] Previous content:\n{last_message}")
-        debug_log("Current content:\n"+message)        
 
-        # 如果有变化才发邮件
-        #if not message or not last_message or not set(message.splitlines()).issubset(set(last_message.splitlines())):
-        #    send_email(message)
-        #    save_result_to_gist(message)
-        #    debug_log("Email sent and result updated.")
-        #else:
-        #    debug_log("Current tee times are subset of previous — no email sent.")
+        if message_lines:
+            message_html = "<br>".join(message_lines)
+            debug_log(f"[邮件] 给 {email} 发送：\n{message_html}")
+            send_email(message_html, [email])
+            all_new_lines.extend(slots)
 
-        # 比较时用纯文本 found_slots 和 last_lines
-        current_lines_set = set(found_slots)
-        if not current_lines_set or not last_lines or not current_lines_set.issubset(last_lines):
-            send_email(message)
-            save_result_to_gist("\n".join(found_slots))  # 只保存纯文本
-            debug_log("Email sent and result updated.")
-        else:
-            debug_log("Current tee times are subset of previous — no email sent.")
-            
+    # 更新 Gist 只存纯文本
+    if all_new_lines and not set(all_new_lines).issubset(last_lines):
+        save_result_to_gist("\n".join(sorted(set(last_lines | set(all_new_lines)))))
+        debug_log("Gist 已更新")
     else:
-        debug_log("No matching tee times found.")
-
+        debug_log("无新增 tee time，Gist 未更新")
 
 # 发邮件
-def send_email(content):
-    receivers = [email.strip() for email in EMAIL_RECEIVER.split(",")]  # 支持多个收件人
-    #msg = MIMEText(content)
-    msg = MIMEText(content, "html")  # ← 让它支持 HTML 格式
+def send_email(content, receivers):
+    msg = MIMEText(content, "html")
     msg["Subject"] = "Gleneagles Tee Time Reminder"
     msg["From"] = EMAIL_SENDER
     msg["To"] = ", ".join(receivers)
 
     with smtplib.SMTP_SSL("smtp.126.com", 465) as server:
         server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_SENDER, receivers, msg.as_string())   
+        server.sendmail(EMAIL_SENDER, receivers, msg.as_string())
 
 if __name__ == "__main__":
     check_tee_times()
