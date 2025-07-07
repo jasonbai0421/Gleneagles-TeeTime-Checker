@@ -64,6 +64,35 @@ def load_user_preferences():
             })
     return user_prefs
 
+#表格时间变换
+from dateutil import parser
+def parse_time_from_sheet(s):
+    try:
+        s = s.strip()
+        if s.startswith("上午") or s.startswith("下午"):
+            s = s.replace("上午", "AM").replace("下午", "PM")
+            return datetime.strptime(s, "%p%I:%M:%S").time()
+        else:
+            # fallback to generic parser (e.g. 09:00, 9:00 AM, etc.)
+            return parser.parse(s).time()
+    except Exception as e:
+        debug_log(f"[SheetTimeParseError] Failed to parse '{s}': {e}")
+        raise
+
+def parse_web_time(s):
+    s = s.strip().upper()
+    try:
+        # 尝试 12 小时制：如 "07:57 AM"
+        return datetime.strptime(s, "%I:%M %p").time()
+    except ValueError:
+        pass
+    try:
+        # 尝试 24 小时制：如 "07:57"、"19:57"
+        return datetime.strptime(s, "%H:%M").time()
+    except ValueError:
+        pass
+    raise ValueError(f"Unrecognized web time format: '{s}'")
+
 ## 判断该 tee time 是否在用户设定时间范围
 def is_time_in_range(tee_time, start_str, end_str):
     fmt = "%H:%M"
@@ -88,16 +117,11 @@ def is_day_match(date_obj, watch_days):
 
 def is_target_time_in_range(t_str, start_time_str, end_time_str):
     try:
-        def parse_time(s):
-            s = s.strip().upper()
-            if "AM" in s or "PM" in s:
-                return datetime.strptime(s, "%I:%M %p").time()
-            else:
-                return datetime.strptime(s, "%H:%M").time()
-
-        t = parse_time(t_str)
-        start = parse_time(start_time_str)
-        end = parse_time(end_time_str)
+        # tee time from webpage
+        t = parse_web_time(t_str)
+        # config range from Google Sheet
+        start = parse_time_from_sheet(start_time_str)
+        end = parse_time_from_sheet(end_time_str)
         return start <= t <= end
     except Exception as e:
         debug_log(f"[TimeParseError] Failed to parse time '{t_str}' or range ({start_time_str}-{end_time_str}): {e}")
