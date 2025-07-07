@@ -100,7 +100,7 @@ def load_user_preferences():
                 "email": email,
                 "days": watch_days,
                 "start": start_time,
-                "end": end_time
+                "end": end_time,
                 "user_count": group_size
             })
     # 加入调试输出
