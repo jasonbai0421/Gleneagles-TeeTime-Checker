@@ -283,7 +283,12 @@ def check_tee_times():
         slots = all_matched.get(email, [])
 
         if not slots:
+            debug_log(f"[匹配结果] {email} 没有符合条件的 tee time")
             continue
+
+        debug_log(f"[匹配结果] {email} 共匹配到 {len(slots)} 个 tee time：")
+        for line in slots:
+            debug_log(f" - {line}")
 
         last_message = load_last_result_from_gist(email)
         last_lines = set(last_message.strip().splitlines()) if last_message else set()
