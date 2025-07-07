@@ -25,7 +25,7 @@ import json
 from google.oauth2.service_account import Credentials
 
 ## 获取 Google Sheet 中用户配置
-def load_user_preferences():
+'''def load_user_preferences():
     #scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     # ⚠️ 请确保先定义 scopes
     scopes = [
@@ -62,6 +62,46 @@ def load_user_preferences():
                 "start": start_time,
                 "end": end_time
             })
+    return user_prefs'''
+def load_user_preferences():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets.readonly",
+        "https://www.googleapis.com/auth/drive.readonly"
+    ]
+
+    credentials_file = "teetime-465103-5096aca64eb6.json"
+    if not os.path.exists(credentials_file):
+        raise ValueError("❌ Credentials JSON file not found.")
+    creds = Credentials.from_service_account_file(credentials_file, scopes=scopes)
+
+    gc = gspread.authorize(creds)
+    sh = gc.open("Teetime")
+    worksheet = sh.sheet1
+
+    records = worksheet.get_all_records()
+    
+    # 用字典保留每个邮箱的最新一行（后出现的为最新）
+    latest_entries = {}
+    for row in records:
+        email = row.get("邮箱地址", "").strip()
+        if not email:
+            continue
+        latest_entries[email] = row  # 后出现的覆盖前面
+
+    user_prefs = []
+    for row in latest_entries.values():
+        email = row.get("邮箱地址", "").strip()
+        watch_days = row.get("监控日期", "").strip()
+        start_time = row.get("监控开始时间", "").strip()
+        end_time = row.get("监控结束时间", "").strip()
+        if email and start_time and end_time:
+            user_prefs.append({
+                "email": email,
+                "days": watch_days,
+                "start": start_time,
+                "end": end_time
+            })
+
     return user_prefs
 
 #表格时间变换
