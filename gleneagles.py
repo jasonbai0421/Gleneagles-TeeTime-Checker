@@ -216,6 +216,7 @@ def check_tee_times():
                     t_str = time_el.text.strip()
                     player_info_el = row.find_element(By.CSS_SELECTOR, "div.player p")
                     player_info = player_info_el.text.strip()
+                    debug_log(f"Raw time: {t_str}, Players: {player_info}")
 
                     for user in user_prefs:
                         if not is_day_match(target_date, user["days"]):
