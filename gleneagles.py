@@ -26,8 +26,13 @@ from google.oauth2.service_account import Credentials
 
 ## 获取 Google Sheet 中用户配置
 def load_user_preferences():
-    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    
+    #scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    # ⚠️ 请确保先定义 scopes
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets.readonly",
+        "https://www.googleapis.com/auth/drive.readonly"
+    ]
+
     # 从环境变量中读取 JSON 字符串（必须是 GitHub Secret 中设置的内容）
     credentials_file = "teetime-465103-5096aca64eb6.json"
     if not os.path.exists(credentials_file):
