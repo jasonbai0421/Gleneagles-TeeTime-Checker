@@ -257,16 +257,15 @@ def check_tee_times():
                 line_with_link = f'{line} <a href="{url}">去预订</a>'
             message_lines.append(line_with_link)
 
-        if message_lines:
-            message_html = "<br>".join(message_lines)
-            debug_log(f"[邮件] 给 {email} 发送：\n{message_html}")
-            send_email(message_html, [email])
-
         # 仅当有新内容才更新 gist
         if new_lines:
             combined = sorted(set(last_lines | set(slots)))
             save_result_to_gist(email, "\n".join(combined))
             debug_log(f"[Gist] 更新 {email} 的历史记录")
+            if message_lines:
+                message_html = "<br>".join(message_lines)
+                debug_log(f"[邮件] 给 {email} 发送：\n{message_html}")
+                send_email(message_html, [email])
         else:
             debug_log(f"[Gist] {email} 没有新 tee time，跳过更新")
 
