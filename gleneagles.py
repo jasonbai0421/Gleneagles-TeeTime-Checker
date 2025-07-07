@@ -45,7 +45,7 @@ def load_user_preferences():
     #creds = Credentials.from_service_account_info(info, scopes=scopes)
 
     gc = gspread.authorize(creds)
-    sh = gc.open("teetime")  # 表格文件名
+    sh = gc.open("Teetime")  # 表格文件名
     worksheet = sh.sheet1     # 第一张表（即表单响应汇总）
 
     records = worksheet.get_all_records()
