@@ -101,7 +101,11 @@ def load_user_preferences():
                 "start": start_time,
                 "end": end_time
             })
-
+    # 加入调试输出
+    debug_log(f"[用户配置] 共保留 {len(user_prefs)} 个用户设置：")
+    for user in user_prefs:
+        debug_log(f" - {user['email']}: {user['days']} {user['start']}~{user['end']}")
+        
     return user_prefs
 
 #表格时间变换
