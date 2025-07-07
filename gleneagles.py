@@ -272,13 +272,13 @@ def check_tee_times():
                         #    continue
                         user_count = user.get("user_count", "")
                         if user_count == "1人":
-                            if not any(s in player_info for s in ["Single", "1 - 2", "2 - 4"]):
+                            if not any(s in player_info for s in ["Single", "1", "4"]):
                                 continue
                         elif user_count == "2人":
-                            if not any(s in player_info for s in ["1 - 2", "2 - 4"]):
+                            if not any(s in player_info for s in ["1", "4"]):
                                 continue
                         elif user_count == "4人":
-                            if "2 - 4" not in player_info:
+                            if "4" not in player_info:
                                 continue
                         
                         line = f"{date_str} {t_str} - {player_info}"
