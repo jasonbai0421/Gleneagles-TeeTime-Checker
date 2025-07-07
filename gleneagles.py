@@ -94,12 +94,14 @@ def load_user_preferences():
         watch_days = row.get("监控日期", "").strip()
         start_time = row.get("监控开始时间", "").strip()
         end_time = row.get("监控结束时间", "").strip()
+        group_size = row.get("人数", "").strip()
         if email and start_time and end_time:
             user_prefs.append({
                 "email": email,
                 "days": watch_days,
                 "start": start_time,
                 "end": end_time
+                "user_count": group_size
             })
     # 加入调试输出
     debug_log(f"[用户配置] 共保留 {len(user_prefs)} 个用户设置：")
@@ -267,8 +269,19 @@ def check_tee_times():
                             continue
                         if not is_target_time_in_range(t_str, user["start"], user["end"]):
                             continue
-                        if "4" not in player_info and "2 - 4" not in player_info:
-                            continue
+                        #if "4" not in player_info and "2 - 4" not in player_info:
+                        #    continue
+                        user_count = user.get("user_count", "")
+                        if user_count == "1人":
+                            if not any(s in player_info for s in ["Single", "1 - 2", "2 - 4"]):
+                                continue
+                        elif user_count == "2人":
+                            if not any(s in player_info for s in ["1 - 2", "2 - 4"]):
+                                continue
+                        elif user_count == "4人":
+                            if "2 - 4" not in player_info:
+                                continue
+                        
                         line = f"{date_str} {t_str} - {player_info}"
                         all_matched.setdefault(user["email"], []).append(line)
                 except Exception as e:
