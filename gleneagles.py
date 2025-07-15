@@ -97,7 +97,7 @@ def load_user_preferences():
         group_size = row.get("人数", "").strip()
 
         unsubscribe = row.get("退订", "").strip().lower()
-        if unsubscribe in ["是", "true", "1"]:
+        if unsubscribe in ["退订","是", "true", "1"]:
             debug_log(f"[退订] 忽略 {email} 的通知请求")
             continue
         
