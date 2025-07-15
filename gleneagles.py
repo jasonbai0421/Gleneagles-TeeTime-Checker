@@ -95,6 +95,12 @@ def load_user_preferences():
         start_time = row.get("监控开始时间", "").strip()
         end_time = row.get("监控结束时间", "").strip()
         group_size = row.get("人数", "").strip()
+
+        unsubscribe = row.get("退订", "").strip().lower()
+        if unsubscribe in ["是", "true", "1"]:
+            debug_log(f"[退订] 忽略 {email} 的通知请求")
+            continue
+        
         if email and start_time and end_time:
             user_prefs.append({
                 "email": email,
