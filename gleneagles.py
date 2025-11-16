@@ -255,7 +255,7 @@ def check_tee_times():
         debug_log(f"Checking {date_str} ... URL: {url}")
 
         driver.get(url)
-        time.sleep(5)  # 确保加载完页面
+        time.sleep(30)  # 确保加载完页面
 
         try:
             rows = driver.find_elements(By.CSS_SELECTOR, "div.teetime")
