@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import time
+import time, random
 
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
@@ -255,7 +256,8 @@ def check_tee_times():
         debug_log(f"Checking {date_str} ... URL: {url}")
 
         driver.get(url)
-        time.sleep(30)  # 确保加载完页面
+        #time.sleep(30)  # 确保加载完页面
+        time.sleep(random.uniform(20, 40))
 
         try:
             rows = driver.find_elements(By.CSS_SELECTOR, "div.teetime")
